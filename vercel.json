@@ -1,6 +1,12 @@
 {
-    "routes": [
-      { "src": "/(.*)", "dest": "/index.html" }
-    ]
+    "rewrites": [
+      { "source": "/", "destination": "/index.html" },
+      { "source": "/checkout", "destination": "/checkout.html" },
+      { "source": "/carrinho", "destination": "/carrinho.html" },
+      { "source": "/contato", "destination": "/contato.html" },
+      { "source": "/categorias", "destination": "/categorias.html" }
+    ],
+    "cleanUrls": true,
+    "trailingSlash": false
   }
   
