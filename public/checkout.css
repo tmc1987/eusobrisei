@@ -1,0 +1,245 @@
+/* Estilos específicos para a página de checkout */
+body {
+    background-color: #000000;
+    color: #FFA500;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+}
+
+h2, h3 {
+    color: #FFA500;
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 18px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;  /* Ajustado para dar mais espaço interno */
+    text-align: left;
+    background-color: #1C1C1C;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+label {
+    display: block;
+    margin: 8px 0 5px;
+    font-weight: bold;
+    color: #FFA500;
+    font-size: 13px;
+}
+
+/* Ajustando largura dos campos de pagamento */
+#form-checkout__cardNumber,
+#form-checkout__cardholderName,
+#form-checkout__cardExpirationMonth,
+#form-checkout__cardExpirationYear,
+#form-checkout__securityCode,
+#form-checkout__installments,
+#form-checkout__issuer,
+#form-checkout__identificationType,
+#form-checkout__identificationNumber,
+#form-checkout__cardholderEmail {
+    width: 100%;
+    max-width: 100%;  /* Removido o limite de 280px para manter a flexibilidade */
+    margin-bottom: 15px;  /* Adicionado espaçamento entre os campos */
+}
+
+input[type="text"], 
+input[type="email"], 
+input[type="number"], 
+input[type="tel"], 
+select {
+    padding: 8px;  /* Aumentado o padding para maior conforto */
+    border-radius: 5px;
+    border: 1px solid #FFA500;
+    margin-bottom: 10px;  /* Aumentado para um espaçamento mais consistente */
+    box-sizing: border-box;
+    background-color: #1C1C1C;  /* Ajustado para maior contraste */
+    color: #FFA500;
+    font-size: 13px;
+}
+
+input[type="radio"] {
+    margin-right: 10px;
+}
+
+button {
+    background-color: #008080;
+    color: white;
+    padding: 10px 18px;  /* Aumentado o padding */
+    border: none;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 20px;  /* Aumentado para espaçamento melhor */
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #FFA500;
+}
+
+button:focus {
+    outline: 2px solid #FFA500;
+}
+
+#frete-price, #total-com-frete {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+/* Estilos para a tabela de itens */
+#items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+#items-table th, #items-table td {
+    padding: 10px;  /* Aumentado o padding */
+    text-align: left;
+    border-bottom: 1px solid #FFA500;
+    color: #FFA500;
+    font-size: 14px;  /* Aumentado para maior legibilidade */
+}
+
+#items-table th {
+    background-color: #333;
+}
+
+#items-table td {
+    background-color: #1C1C1C;
+}
+
+/* Flexbox para organizar o layout */
+.flex-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 15px;  /* Aumentado o espaçamento */
+}
+
+.flex-item {
+    flex-basis: calc(50% - 10px);
+}
+
+/* Alinhamento dos campos de cartão e dados do cliente */
+.payment-details, .client-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;  /* Aumentado o espaçamento */
+}
+
+.payment-details {
+    justify-content: space-between;
+}
+
+/* Ocultar campos de cartão por padrão */
+#card-info {
+    display: none;
+}
+
+.client-details {
+    justify-content: space-between;
+}
+
+.payment-radio-group {
+    display: flex;
+    justify-content: space-around;
+    margin: 15px 0;  /* Aumentado o espaçamento */
+}
+
+.payment-radio-group label {
+    margin-right: 10px;
+    color: #FFA500;
+    font-size: 13px;
+}
+
+/* Estilos para o QR Code */
+#qr_code_container {
+    display: none;  /* Esconde o container até o pagamento PIX ser selecionado */
+    margin-top: 20px;
+    text-align: center;
+    display: flex;  /* Adicionando flexbox */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#qr_code_image {
+    width: 250px;
+    height: 250px;
+    margin: 0 auto;
+    border: 2px solid #FFA500;
+    padding: 10px;
+    background-color: #1C1C1C;
+}
+
+#pix_code {
+    margin-top: 10px;
+    width: 100%;
+    background-color: #333;
+    color: #FFA500;
+    border: 1px solid #FFA500;
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* Estilos para feedback de erro */
+.error {
+    border: 1px solid red;
+    background-color: #2C2C2C;
+}
+
+.error-message {
+    color: red;
+    font-size: 12px;
+    margin-top: -5px;
+    margin-bottom: 10px;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    .flex-container {
+        flex-direction: column;
+    }
+
+    button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    h2, h3 {
+        font-size: 1.2em;
+    }
+
+    .payment-details input, 
+    .client-details input {
+        min-width: 100%;
+    }
+
+    .flex-item {
+        flex-basis: 100%;
+    }
+
+    /* Ajuste do tamanho do QR Code em telas menores */
+    #qr_code_image {
+        width: 200px;
+        height: 200px;
+    }
+
+    #pix_code {
+        font-size: 14px;
+        padding: 8px;
+    }
+}
