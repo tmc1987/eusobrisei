@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+    <head>
+        <link rel="stylesheet" href="categorias.css"> <!-- Link atualizado para o CSS específico da aba Categorias -->
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Categorias - Eu Só Brisei</title>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"> <!-- Fontes personalizadas -->
+    </head>
+    
+<body>
+
+    <!-- Menu Principal será carregado dinamicamente -->
+    <header>
+        <!-- O conteúdo do menu será inserido dinamicamente via JavaScript -->
+    </header>
+
+    <!-- Seção Categorias -->
+    <section class="categorias-section">
+        <h1 class="categorias-title">Categorias</h1>
+        <p class="categorias-subtitle">Explore nossas artes exclusivas</p>
+        
+        <div class="categorias-grid">
+            <!-- Categoria Macramé -->
+            <div class="categoria-card">
+                <img src="https://via.placeholder.com/300x300" alt="Imagem Macramé">
+                <h3>Artes em Macramé</h3>
+                <button class="btn-ver-mais" onclick="window.location.href='#'">Ver Mais</button> <!-- Botão Ver Mais -->
+            </div>
+
+            <!-- Categoria Filigrana -->
+            <div class="categoria-card">
+                <img src="https://via.placeholder.com/300x300" alt="Imagem Filigrana">
+                <h3>Artes em Filigrana</h3>
+                <button class="btn-ver-mais" onclick="window.location.href='#'">Ver Mais</button> <!-- Botão Ver Mais -->
+            </div>
+        </div>
+
+    </section>
+
+    <footer>
+        <p>© 2024 Eu Só Brisei. Todos os direitos reservados.</p>
+    </footer>
+
+    <script>
+        // Carregar o menu de navegação dinamicamente
+        fetch('menu.html')
+            .then(response => response.text())
+            .then(data => {
+                document.querySelector('header').innerHTML = data;
+            })
+            .catch(error => console.log('Erro ao carregar o menu:', error));
+    </script>
+
+</body>
+</html>

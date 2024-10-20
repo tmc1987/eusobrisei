@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Eu Só Brisei - Início</title>
+    <meta name="description" content="Joias artesanais em macramé e filigrana feitas à mão. Compre colares, pulseiras, brincos e anéis únicos na Eu Só Brisei.">
+    <link rel="stylesheet" href="styles.css"> <!-- Link para o CSS geral -->
+    <link rel="stylesheet" href="modal.css"> <!-- Link para o CSS do modal -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"> <!-- Fontes personalizadas -->
+
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous">
+
+    <!-- SDK do Mercado Pago v2 para o frontend -->
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+</head>
+<body>
+
+    <!-- Menu Principal -->
+    <header>
+        <div class="menu-container">
+            <nav class="main-nav">
+                <div class="main-nav-left">
+                    <a href="index.html">Início</a>
+                    <a href="artes.html">Artes Disponíveis</a> <!-- Alterado de "Produtos" para "Artes Disponíveis" -->
+                </div>
+
+                <div class="logo">
+                    <img src="https://i.ibb.co/ZxDV36s/LOGO-SITE.png" alt="Logo Eu Só Brisei" style="width: 100px; height: 100px;">
+                </div>
+
+                <div class="main-nav-right">
+                    <a href="contato.html">Fale Conosco</a>
+                    <a href="categorias.html">Categorias</a>
+                    <a href="carrinho.html" id="menu-carrinho">
+                        <i class="fas fa-shopping-cart" style="font-size: 24px; color: white;"></i> Carrinho
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Carousel de Banners -->
+    <div class="carousel-container">
+        <div class="carousel">
+            <div class="slide">
+                <img src="https://i.ibb.co/Yj7xQxv/banner-eusobrisei.png" alt="banner-eusobrisei" border="0">
+            </div>
+            <div class="slide">
+                <a href="https://ibb.co/jVLG058">
+                    <img src="https://i.ibb.co/j6LrhC3/banner-frete.png" alt="banner-frete" border="0">
+                </a>
+            </div>
+            <div class="slide">
+                <img src="https://i.ibb.co/qp4RKsL/banner-pagamento.png" alt="banner-pagamento" border="0">
+            </div>
+        </div>
+        <div class="carousel-controls">
+            <button id="prev">◀️</button>
+            <button id="next">▶️</button>
+        </div>
+    </div>
+
+    <!-- Botão Ver Tudo -->
+    <div class="view-all-container">
+        <button class="btn-view-all" onclick="window.location.href='#todas-artes'">Ver Tudo</button>
+    </div>
+
+    <!-- Artes Disponíveis -->
+    <div class="container">
+        <div class="product-grid">
+            <!-- Arte 1 -->
+            <div class="product-card">
+                <img src="https://i.ibb.co/3WbHqPJ/Design-sem-nome.png" alt="Design-sem-nome" border="0">
+                <h2>Colar de Macramé</h2>
+                <p>Colar artesanal feito com técnica de macramé, com pedra de ágata cornalina.</p>
+                <p><strong>Preço: R$ 1,00</strong></p> <!-- Preço da arte -->
+                <div class="button-group">
+                    <button class="btn-buy" onclick="comprar('Colar de Macramé', 1, 'colarmacrame')">Comprar</button>
+                    <button class="btn-add-cart" onclick="adicionarCarrinho('Colar de Macramé', 1, 'colarmacrame')">Incluir no Carrinho</button>
+                    <button class="btn-info" data-product="colarmacrame" style="background-color: orange; color: black;">+INFORMAÇÕES</button>
+                </div>
+            </div>
+
+            <!-- Arte 2 -->
+            <div class="product-card">
+                <img src="https://via.placeholder.com/300x300" alt="Anel de Filigrana">
+                <h2>Anel de Filigrana</h2>
+                <p>Anel feito com filigrana de prata 950, artesanal e único.</p>
+                <p><strong>Preço: R$ 200,00</strong></p> <!-- Preço da arte -->
+                <div class="button-group">
+                    <button class="btn-buy" onclick="comprar('Anel de Filigrana', 200, 'anelfiligrana')">Comprar</button>
+                    <button class="btn-add-cart" onclick="adicionarCarrinho('Anel de Filigrana', 200, 'anelfiligrana')">Incluir no Carrinho</button>
+                    <button class="btn-info" data-product="anelfiligrana" style="background-color: orange; color: black;">+INFORMAÇÕES</button>
+                </div>
+            </div>
+
+            <!-- Arte 3 -->
+            <div class="product-card">
+                <img src="https://via.placeholder.com/300x300" alt="Pulseira de Macramé">
+                <h2>Pulseira de Macramé</h2>
+                <p>Pulseira artesanal feita com técnica de macramé, ideal para presentes.</p>
+                <p><strong>Preço: R$ 150,00</strong></p> <!-- Preço da arte -->
+                <div class="button-group">
+                    <button class="btn-buy" onclick="comprar('Pulseira de Macramé', 150, 'pulseiramacrame')">Comprar</button>
+                    <button class="btn-add-cart" onclick="adicionarCarrinho('Pulseira de Macramé', 150, 'pulseiramacrame')">Incluir no Carrinho</button>
+                    <button class="btn-info" data-product="pulseiramacrame" style="background-color: orange; color: black;">+INFORMAÇÕES</button>
+                </div>
+            </div>
+
+            <!-- Arte 4 -->
+            <div class="product-card">
+                <img src="https://via.placeholder.com/300x300" alt="Brinco de Filigrana">
+                <h2>Brinco de Filigrana</h2>
+                <p>Brinco artesanal de filigrana, feito à mão com detalhes únicos.</p>
+                <p><strong>Preço: R$ 250,00</strong></p> <!-- Preço da arte -->
+                <div class="button-group">
+                    <button class="btn-buy" onclick="comprar('Brinco de Filigrana', 250, 'brincofiligrana')">Comprar</button>
+                    <button class="btn-add-cart" onclick="adicionarCarrinho('Brinco de Filigrana', 250, 'brincofiligrana')">Incluir no Carrinho</button>
+                    <button class="btn-info" data-product="brincofiligrana" style="background-color: orange; color: black;">+INFORMAÇÕES</button>
+                </div>
+            </div>
+
+            <!-- Arte 5 -->
+            <div class="product-card">
+                <img src="https://via.placeholder.com/300x300" alt="Arte 5">
+                <h2>Pulseira de Filigrana</h2>
+                <p>Pulseira artesanal de filigrana, feita com cuidado e delicadeza.</p>
+                <p><strong>Preço: R$ 120,00</strong></p> <!-- Preço da arte -->
+                <div class="button-group">
+                    <button class="btn-buy" onclick="comprar('Pulseira de Filigrana', 120, 'pulseirafiligrana')">Comprar</button>
+                    <button class="btn-add-cart" onclick="adicionarCarrinho('Pulseira de Filigrana', 120, 'pulseirafiligrana')">Incluir no Carrinho</button>
+                    <button class="btn-info" data-product="pulseirafiligrana" style="background-color: orange; color: black;">+INFORMAÇÕES</button>
+                </div>
+            </div>
+
+            <!-- Arte 6 -->
+            <div class="product-card">
+                <img src="https://via.placeholder.com/300x300" alt="Arte 6">
+                <h2>Colar de Filigrana</h2>
+                <p>Colar feito com técnicas de filigrana, com detalhes únicos.</p>
+                <p><strong>Preço: R$ 180,00</strong></p> <!-- Preço da arte -->
+                <div class="button-group">
+                    <button class="btn-buy" onclick="comprar('Colar de Filigrana', 180, 'colarfili')">Comprar</button>
+                    <button class="btn-add-cart" onclick="adicionarCarrinho('Colar de Filigrana', 180, 'colarfili')">Incluir no Carrinho</button>
+                    <button class="btn-info" data-product="colarfili" style="background-color: orange; color: black;">+INFORMAÇÕES</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Estrutura -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <!-- Imagens da Arte -->
+            <div class="modal-images">
+                <img src="https://via.placeholder.com/150" alt="Imagem 1 da Arte">
+                <img src="https://via.placeholder.com/150" alt="Imagem 2 da Arte">
+                <img src="https://via.placeholder.com/150" alt="Imagem 3 da Arte">
+                <img src="https://via.placeholder.com/150" alt="Imagem 4 da Arte">
+            </div>
+            
+            <!-- Detalhes da Arte -->
+            <div class="modal-details">
+                <h2 id="modal-title">Título da Arte</h2>
+                <p id="modal-category">Categoria: Macramé / Filigrana</p>
+                <p id="modal-description">Descrição detalhada da arte. Aqui você pode inserir todas as especificações.</p>
+                <h3 id="modal-price">Preço: R$ 120,00</h3>
+                <p id="modal-payment">Condições de pagamento: 6x de R$ 20,00 sem juros.</p>
+                
+                <!-- Botões -->
+                <button class="btn-buy" id="btn-comprar">Comprar</button>
+                <button class="btn-add-cart" id="btn-incluir">Incluir no Carrinho</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2024 Eu Só Brisei. Todos os direitos reservados.</p>
+    </footer>
+
+    <script>
+        const mp = new MercadoPago('APP_USR-4115909006959144-092213-b8561437409fd30d77848352287f57c9-1207255849'); // Chave pública fornecida
+
+        // Carrega o carrinho do sessionStorage ou inicializa um novo
+        let cart = JSON.parse(sessionStorage.getItem('cart')) || [];
+
+        // Função para redirecionar ao checkout e zerar o carrinho
+        function comprar(produto, preco, idProduto) {
+            cart = []; // Zera o carrinho
+            cart.push({ productId: idProduto, title: produto, unit_price: preco, quantity: 1 }); // Adiciona o produto atual
+            sessionStorage.setItem('cart', JSON.stringify(cart)); // Armazena no sessionStorage
+
+            // Envia para o backend para zerar o carrinho no servidor
+            fetch('/clear_cart', { method: 'POST' });
+
+            window.location.href = 'checkout.html';  // Redireciona para a página de checkout
+        }
+
+        // Função para adicionar artes ao carrinho
+        function adicionarCarrinho(nome, preco, idProduto) {
+            const item = { productId: idProduto, title: nome, unit_price: preco, quantity: 1 };
+
+            // Verifica se o item já está no carrinho e, se sim, apenas atualiza a quantidade
+            const existingItem = cart.find(product => product.productId === idProduto);
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push(item);
+            }
+
+            sessionStorage.setItem('cart', JSON.stringify(cart)); // Armazena no sessionStorage
+            alert("Arte adicionada ao carrinho!");
+        }
+
+        // Modal Funcionalidade
+
+        const modal = document.getElementById("infoModal");
+        const closeModalBtn = document.querySelector(".close");
+        const btnComprar = document.getElementById("btn-comprar");
+        const btnIncluir = document.getElementById("btn-incluir");
+
+        // **Evento para abrir o modal ao clicar no botão "+INFORMAÇÕES"**
+        document.querySelectorAll('.btn-info').forEach(button => {
+            button.addEventListener('click', function() {
+                modal.style.display = "block";
+                // Aqui você pode passar as informações da arte para o modal
+                const productId = this.getAttribute('data-product');
+                // Exemplo: Carregar detalhes da arte baseado no ID
+                carregarDetalhesProduto(productId);
+            });
+        });
+
+        // **Função para carregar detalhes da arte no modal**
+        function carregarDetalhesProduto(productId) {
+            // Defina as informações da arte de acordo com o ID da arte
+            let productDetails = {
+                title: '', // Título da arte
+                description: '', // Descrição da arte
+                price: 0 // Preço da arte
+            };
+
+            switch (productId) {
+                case 'colarmacrame':
+                    productDetails.title = 'Colar de Macramé';
+                    productDetails.description = 'Colar artesanal feito com técnica de macramé, com pedra de ágata cornalina.';
+                    productDetails.price = 1;
+                    break;
+                case 'anelfiligrana':
+                    productDetails.title = 'Anel de Filigrana';
+                    productDetails.description = 'Anel feito com filigrana de prata 950, artesanal e único.';
+                    productDetails.price = 200;
+                    break;
+                case 'pulseiramacrame':
+                    productDetails.title = 'Pulseira de Macramé';
+                    productDetails.description = 'Pulseira artesanal feita com técnica de macramé, ideal para presentes.';
+                    productDetails.price = 150;
+                    break;
+                case 'brincofiligrana':
+                    productDetails.title = 'Brinco de Filigrana';
+                    productDetails.description = 'Brinco artesanal de filigrana, feito à mão com detalhes únicos.';
+                    productDetails.price = 250;
+                    break;
+                case 'pulseirafiligrana':
+                    productDetails.title = 'Pulseira de Filigrana';
+                    productDetails.description = 'Pulseira artesanal de filigrana, feita com cuidado e delicadeza.';
+                    productDetails.price = 120;
+                    break;
+                case 'colarfili':
+                    productDetails.title = 'Colar de Filigrana';
+                    productDetails.description = 'Colar feito com técnicas de filigrana, com detalhes únicos.';
+                    productDetails.price = 180;
+                    break;
+                default:
+                    productDetails.title = 'Arte Desconhecida';
+                    productDetails.description = 'Descrição não disponível.';
+                    productDetails.price = 0;
+            }
+
+            document.getElementById('modal-title').textContent = productDetails.title;
+            document.getElementById('modal-description').textContent = productDetails.description;
+            document.getElementById('modal-price').textContent = `Preço: R$ ${productDetails.price.toFixed(2)}`;
+            
+            // Atualiza a função do botão "Comprar"
+            btnComprar.onclick = function() {
+                comprar(productDetails.title, productDetails.price, productId);
+            };
+            
+            // Atualiza a função do botão "Incluir no Carrinho"
+            btnIncluir.onclick = function() {
+                adicionarCarrinho(productDetails.title, productDetails.price, productId);
+            };
+        }
+
+        // **Evento para fechar o modal ao clicar no "X"**
+        closeModalBtn.addEventListener('click', function() {
+            modal.style.display = "none";
+        });
+
+        // **Fechar o modal ao clicar fora da área de conteúdo**
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+        });
+
+        // **Evitar a abertura automática do modal**
+        modal.style.display = "none"; // Garante que o modal esteja fechado ao carregar a página
+
+        /* Script para rotacionar o carousel automaticamente */
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.style.display = (i === index) ? 'block' : 'none';
+            });
+        }
+
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % totalSlides;
+            showSlide(currentSlide);
+        }
+
+        document.getElementById('prev').addEventListener('click', () => {
+            currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+            showSlide(currentSlide);
+        });
+
+        document.getElementById('next').addEventListener('click', () => {
+            currentSlide = (currentSlide + 1) % totalSlides;
+            showSlide(currentSlide);
+        });
+
+        setInterval(nextSlide, 5000); // Troca de banner a cada 5 segundos
+        showSlide(currentSlide); // Mostra o primeiro banner ao iniciar
+
+    </script>
+
+</body>
+</html>

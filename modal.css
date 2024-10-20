@@ -1,0 +1,84 @@
+/* Estilos básicos para o modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: #1C1C1C;
+    color: #FFA500;
+    padding: 20px;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 800px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Botão de fechar */
+.close {
+    color: #fff;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover, .close:focus {
+    color: #FFA500;
+}
+
+/* Contêiner para o slider de imagens */
+.image-slider {
+    position: relative;
+    width: 100%;
+    max-width: 400px; /* Ajusta o tamanho do slider */
+    margin: 20px 0;
+}
+
+.image-slider img {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    display: none; /* Esconde todas as imagens inicialmente */
+}
+
+.image-slider img.active {
+    display: block; /* Mostra apenas a imagem ativa */
+}
+
+/* Botões de navegação do slider */
+.slider-nav {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    transform: translateY(-50%);
+}
+
+.slider-nav button {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    font-size: 24px;
+}
+
+.slider-nav button:hover {
+    background-color: rgba(255, 165, 0, 0.7);
+}

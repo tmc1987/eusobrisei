@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Eu Só Brisei - Artes Disponíveis</title>
+    <link rel="stylesheet" href="artes.css"> <!-- Link para o CSS correto -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos adicionais para o modal */
+        .modal-images img {
+            width: 150px;
+            height: 150px;
+            margin: 10px;
+            border-radius: 5px;
+        }
+
+        .modal-details .btn-buy, 
+        .modal-details .btn-add-cart {
+            display: inline-block;
+            margin-right: 10px;
+            padding: 10px 20px;
+            background-color: #008080;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .modal-details .btn-buy:hover, 
+        .modal-details .btn-add-cart:hover {
+            background-color: #FFA500;
+        }
+
+        .modal {
+            display: none; /* Oculta o modal por padrão */
+            position: fixed; /* Fixa o modal na janela */
+            z-index: 1000; /* Garante que o modal esteja acima de outros elementos */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; /* Habilita rolagem se o conteúdo for maior que a tela */
+            background-color: rgba(0, 0, 0, 0.8); /* Fundo escuro semitransparente */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #1C1C1C;
+            padding: 20px;
+            color: #FFA500;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 800px; /* Limita a largura máxima do modal */
+            border-radius: 10px;
+            position: relative;
+            max-height: 90%;
+            overflow-y: auto;
+        }
+
+        .close {
+            color: #fff;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #FFA500;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Menu Principal será carregado aqui -->
+    <header>
+        <!-- O conteúdo do menu será inserido dinamicamente via JavaScript -->
+    </header>
+
+    <!-- Seção Artes Disponíveis -->
+    <section class="produtos-section">
+        <h1 class="produtos-title">Artes Disponíveis</h1>
+        <p class="produtos-subtitle">Escolha entre nossas obras artesanais exclusivas</p>
+    </section>
+
+    <!-- Grid de Produtos -->
+    <div class="container">
+        <div class="product-grid">
+            <!-- Produto 1 -->
+            <div class="product-card">
+                <img src="https://via.placeholder.com/300x300" alt="Arte 1">
+                <h2>Colar de Macramê</h2>
+                <p>Colar artesanal feito com técnica de macramê, com pedra de ágata cornalina.</p>
+                <p><strong>Preço: R$ 1,00</strong></p> <!-- Preço do produto -->
+                <button class="btn-buy" id="buy-produto1" onclick="verificarEstoque('produto1', 95, 'Colar de Macramê', true)">Comprar</button>
+                <button class="btn-add-cart" id="cart-produto1" onclick="verificarEstoque('produto1', 95, 'Colar de Macramê', false)">Incluir no Carrinho</button>
+                <button class="btn-info" data-product="produto1">+ INFORMAÇÕES</button> <!-- Botão para abrir o modal -->
+                <p id="estoque-produto1"></p> <!-- Exibe a quantidade ou mensagem de esgotado -->
+            </div>
+
+            <!-- Produto 2 -->
+            <div class="product-card">
+                <img src="https://via.placeholder.com/300x300" alt="Arte 2">
+                <h2>Pintura em Tela</h2>
+                <p>Pintura feita à mão com tinta acrílica em tela de 60x60cm.</p>
+                <p><strong>Preço: R$ 200,00</strong></p> <!-- Preço do produto -->
+                <button class="btn-buy" id="buy-produto2" onclick="verificarEstoque('produto2', 200, 'Pintura em Tela', true)">Comprar</button>
+                <button class="btn-add-cart" id="cart-produto2" onclick="verificarEstoque('produto2', 200, 'Pintura em Tela', false)">Incluir no Carrinho</button>
+                <button class="btn-info" data-product="produto2">+ INFORMAÇÕES</button> <!-- Botão para abrir o modal -->
+                <p id="estoque-produto2"></p> <!-- Exibe a quantidade ou mensagem de esgotado -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Estrutura -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-images">
+                <img src="https://via.placeholder.com/150" alt="Imagem 1 do Produto">
+                <img src="https://via.placeholder.com/150" alt="Imagem 2 do Produto">
+                <img src="https://via.placeholder.com/150" alt="Imagem 3 do Produto">
+                <img src="https://via.placeholder.com/150" alt="Imagem 4 do Produto">
+            </div>
+            <div class="modal-details">
+                <h2 id="modal-title">Título do Produto</h2>
+                <p id="modal-category">Categoria do Produto</p>
+                <p id="modal-description">Descrição detalhada do produto.</p>
+                <h3 id="modal-price">Preço</h3>
+                <p id="modal-payment">Condições de pagamento</p>
+                <div>
+                    <button class="btn-buy" id="modal-btn-comprar">Comprar</button>
+                    <button class="btn-add-cart" id="modal-btn-incluir">Incluir no Carrinho</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2024 Eu Só Brisei. Todos os direitos reservados.</p>
+    </footer>
+
+    <script>
+        // Carrega o menu de navegação
+        fetch('menu.html')
+            .then(response => response.text())
+            .then(data => {
+                document.querySelector('header').innerHTML = data;
+            })
+            .catch(error => console.log('Erro ao carregar o menu:', error));
+
+        // Carrega o carrinho do sessionStorage ou inicializa um novo
+        let cart = JSON.parse(sessionStorage.getItem('cart')) || [];
+
+        // Função para verificar estoque antes da compra ou adição ao carrinho
+        function verificarEstoque(productId, preco, nomeProduto, isCompra) {
+            fetch(`/get-product-quantity/${productId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const quantidade = data.quantity;
+                    const estoqueElement = document.getElementById(`estoque-${productId}`);
+
+                    if (quantidade > 0) {
+                        estoqueElement.textContent = `Disponível: ${quantidade} unidades`;
+
+                        if (isCompra) {
+                            comprar(nomeProduto, preco, productId);
+                        } else {
+                            adicionarCarrinho(nomeProduto, preco, productId);
+                        }
+                    } else {
+                        estoqueElement.textContent = 'Produto Esgotado';
+                        alert('Desculpe, este produto está esgotado.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao verificar estoque:', error);
+                    alert('Erro ao verificar o estoque. Tente novamente mais tarde.');
+                });
+        }
+
+        // Função para redirecionar ao checkout e zerar o carrinho
+        function comprar(produto, preco, idProduto) {
+            cart = []; // Zera o carrinho
+            cart.push({ productId: idProduto, title: produto, unit_price: preco, quantity: 1 }); // Adiciona o produto atual
+            sessionStorage.setItem('cart', JSON.stringify(cart)); // Armazena no sessionStorage
+
+            // Envia para o backend para zerar o carrinho no servidor
+            fetch('/clear_cart', { method: 'POST' });
+
+            window.location.href = 'checkout.html';  // Redireciona para a página de checkout
+        }
+
+        // Função para adicionar produtos ao carrinho
+        function adicionarCarrinho(nome, preco, idProduto) {
+            const item = { productId: idProduto, title: nome, unit_price: preco, quantity: 1 };
+
+            // Verifica se o item já está no carrinho e, se sim, apenas atualiza a quantidade
+            const existingItem = cart.find(product => product.productId === idProduto);
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push(item);
+            }
+
+            sessionStorage.setItem('cart', JSON.stringify(cart)); // Armazena no sessionStorage
+            alert("Produto adicionado ao carrinho!");
+        }
+
+        // Modal Funcionalidade
+
+        const modal = document.getElementById("infoModal");
+        const closeModalBtn = document.querySelector(".close");
+        const modalBtnComprar = document.getElementById("modal-btn-comprar");
+        const modalBtnIncluir = document.getElementById("modal-btn-incluir");
+
+        // **Evento para abrir o modal ao clicar no botão "+INFORMAÇÕES"**
+        document.querySelectorAll('.btn-info').forEach(button => {
+            button.addEventListener('click', function() {
+                modal.style.display = "block";
+                const productId = this.getAttribute('data-product');
+                carregarDetalhesProduto(productId); // Carrega detalhes no modal
+            });
+        });
+
+        // **Função para carregar detalhes do produto no modal**
+        function carregarDetalhesProduto(productId) {
+            let productDetails = {
+                title: '',
+                description: '',
+                price: 0
+            };
+
+            switch (productId) {
+                case 'produto1':
+                    productDetails.title = 'Colar de Macramê';
+                    productDetails.description = 'Colar artesanal feito com técnica de macramê, com pedra de ágata cornalina.';
+                    productDetails.price = 95;
+                    break;
+                case 'produto2':
+                    productDetails.title = 'Pintura em Tela';
+                    productDetails.description = 'Pintura feita à mão com tinta acrílica em tela de 60x60cm.';
+                    productDetails.price = 200;
+                    break;
+                default:
+                    productDetails.title = 'Produto Desconhecido';
+                    productDetails.description = 'Descrição não disponível.';
+                    productDetails.price = 0;
+            }
+
+            document.getElementById('modal-title').textContent = productDetails.title;
+            document.getElementById('modal-description').textContent = productDetails.description;
+            document.getElementById('modal-price').textContent = `Preço: R$ ${productDetails.price.toFixed(2)}`;
+            document.getElementById('modal-payment').textContent = `Condições de pagamento: 6x de R$ ${(productDetails.price / 6).toFixed(2)} sem juros`;
+
+            // Atualiza a função do botão "Comprar"
+            modalBtnComprar.onclick = function() {
+                comprar(productDetails.title, productDetails.price, productId);
+            };
+
+            // Atualiza a função do botão "Incluir no Carrinho"
+            modalBtnIncluir.onclick = function() {
+                adicionarCarrinho(productDetails.title, productDetails.price, productId);
+            };
+        }
+
+        // **Evento para fechar o modal ao clicar no "X"**
+        closeModalBtn.addEventListener('click', function() {
+            modal.style.display = "none";
+        });
+
+        // **Fechar o modal ao clicar fora da área de conteúdo**
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+        });
+
+        // **Garante que o modal esteja fechado ao carregar a página**
+        modal.style.display = "none";
+
+    </script>
+
+</body>
+</html>

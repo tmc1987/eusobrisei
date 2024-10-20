@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <link rel="stylesheet" href="checkout.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Checkout - Eu Só Brisei</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Link para o CSS -->
+    <script src="https://sdk.mercadopago.com/js/v2"></script> <!-- SDK do Mercado Pago -->
+</head>
+<body>
+
+    <header>
+        <div class="menu-container">
+            <nav class="main-nav">
+                <div class="main-nav-left">
+                    <a href="index.html">Início</a>
+                    <a href="artes.html">Artes Disponíveis</a> <!-- Alterado de Produtos para Artes Disponíveis -->
+                </div>
+
+                <div class="logo">
+                    <img src="https://i.ibb.co/ZxDV36s/LOGO-SITE.png" alt="Logo Eu Só Brisei" style="width: 100px; height: 100px;">
+                </div>
+
+                <div class="main-nav-right">
+                    <a href="contato.html">Fale Conosco</a>
+                    <a href="categorias.html">Categorias</a>
+                    <a href="carrinho.html" id="menu-carrinho">
+                        <i class="fas fa-shopping-cart" style="font-size: 24px; color: white;"></i> Carrinho
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h2>Detalhes da Compra</h2>
+        <div id="cart-items">
+            <table id="items-table">
+                <thead>
+                    <tr>
+                        <th>ITEM</th>
+                        <th>QUANTIDADE</th>
+                        <th>VALOR UNITÁRIO</th>
+                        <th>VALOR TOTAL</th>
+                        <th>AÇÃO</th>
+                    </tr>
+                </thead>
+                <tbody id="items-list"></tbody>
+            </table>
+            <p>Total: R$ <span id="total-price">0,00</span></p>
+        </div>
+
+        <h2>Dados do Cliente</h2>
+        <div class="client-details flex-container">
+            <div class="flex-item">
+                <label for="nome">Nome Completo</label>
+                <input type="text" id="nome" name="nome" autocomplete="name" required>
+                <span class="error-message" id="nome-error"></span>
+            </div>
+            <div class="flex-item">
+                <label for="contato">Contato (Telefone)</label>
+                <input type="tel" id="contato" name="contato" placeholder="(xx)xxxxx-xxxx" autocomplete="tel" required oninput="formatPhone(this)">
+                <span class="error-message" id="contato-error"></span>
+            </div>
+            <div class="flex-item">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" name="email" autocomplete="email" required>
+                <span class="error-message" id="email-error"></span>
+            </div>
+            <div class="flex-item">
+                <label for="cpf">CPF</label>
+                <input type="text" id="cpf" name="cpf" autocomplete="off" required oninput="formatCPF(this)">
+                <span class="error-message" id="cpf-error"></span>
+            </div>
+            <div class="flex-item">
+                <label for="cep">CEP</label>
+                <input type="text" id="cep" name="cep" placeholder="CEP" autocomplete="postal-code" required oninput="formatCEP(this)">
+                <button type="button" onclick="executarFuncoesCEP()">Buscar CEP e Calcular Frete</button>
+            </div>
+        </div>
+
+        <div id="frete-result"></div>
+
+        <div class="client-details flex-container" id="endereco-section" style="display: none;">
+            <div class="flex-item">
+                <label for="rua">Endereço</label>
+                <input type="text" id="rua" name="rua" placeholder="Rua" autocomplete="street-address" required>
+                <input type="text" id="numero" name="numero" placeholder="Número" required>
+                <input type="text" id="bairro" name="bairro" placeholder="Bairro" required>
+            </div>
+            <div class="flex-item">
+                <label for="complemento">Complemento (Opcional)</label>
+                <input type="text" id="complemento" name="complemento" placeholder="Apartamento, bloco, etc.">
+            </div>
+            <div class="flex-item">
+                <label for="cidade">Cidade</label>
+                <input type="text" id="cidade" name="cidade" placeholder="Cidade" autocomplete="address-level2" required>
+            </div>
+            <div class="flex-item">
+                <label for="estado">Estado</label>
+                <input type="text" id="estado" name="estado" placeholder="Estado" autocomplete="address-level1" required>
+            </div>
+        </div>
+
+        <div>
+            <p>Frete: R$ <span id="frete-price">0,00</span></p>
+        </div>
+
+        <h2>Escolha o Método de Pagamento</h2>
+        <form id="payment-form">
+            <div class="payment-radio-group">
+                <label><input type="radio" id="credito" name="payment-method" value="credito" required> Cartão de Crédito</label>
+                <label><input type="radio" id="debito" name="payment-method" value="debito"> Cartão de Débito</label>
+                <label><input type="radio" id="pix" name="payment-method" value="pix"> PIX</label>
+            </div>
+
+            <div class="payment-details" id="card-info" style="display: none;">
+                <div class="flex-item">
+                    <label for="cardNumber">Número do Cartão</label>
+                    <input type="text" id="cardNumber" name="cardNumber" placeholder="Número do Cartão" autocomplete="cc-number">
+                </div>
+                <div class="flex-item">
+                    <label for="cardExpirationMonth">Mês de Validade</label>
+                    <input type="text" id="cardExpirationMonth" name="cardExpirationMonth" placeholder="MM" autocomplete="cc-exp-month">
+                </div>
+                <div class="flex-item">
+                    <label for="cardExpirationYear">Ano de Validade</label>
+                    <input type="text" id="cardExpirationYear" name="cardExpirationYear" placeholder="YY" autocomplete="cc-exp-year">
+                </div>
+                <div class="flex-item">
+                    <label for="securityCode">Código de Segurança</label>
+                    <input type="text" id="securityCode" name="securityCode" placeholder="CVV" autocomplete="cc-csc">
+                </div>
+                <div class="flex-item">
+                    <label for="cardholderName">Nome no Cartão</label>
+                    <input type="text" id="cardholderName" name="cardholderName" placeholder="Nome Completo" autocomplete="cc-name">
+                </div>
+                <div class="flex-item">
+                    <label for="installments">Parcelas</label>
+                    <select id="installments" name="installments"></select>
+                </div>
+            </div>
+
+            <h2>Total com Frete</h2>
+            <p>Total: R$ <span id="total-com-frete">0,00</span></p>
+
+            <!-- QR Code Container -->
+            <div id="qr_code_container" style="display:none;">
+                <img id="qr_code_image" alt="QR Code PIX" style="width:200px; height:200px; display:none;" />
+                <input type="text" id="pix_code" name="pix_code" readonly style="display:block;">
+                
+                <!-- Botão para copiar o código PIX -->
+                <button type="button" id="copy-button" onclick="copyPixCode()">Copiar código PIX</button>
+            </div>
+
+            <button type="button" id="submit-button">Finalizar Compra</button>
+        </form>
+    </div>
+
+    <script>
+        const backendUrl = 'https://9ed9-177-70-252-192.ngrok-free.app'; // Substituindo localhost pelo ngrok
+
+        const mp = new MercadoPago('APP_USR-671c40ea-a412-46ed-8444-621ee1788946'); // Adicione esta linha aqui, logo após backendUrl
+
+        function executarFuncoesCEP() {
+            preencherCidadeEstado();
+            calcularFrete();
+        }
+
+        function preencherCidadeEstado() {
+            let cep = document.querySelector('input[name="cep"]').value;
+            let cidadeInput = document.querySelector('input[name="cidade"]');
+            let estadoInput = document.querySelector('input[name="estado"]');
+            let enderecoSection = document.getElementById('endereco-section');
+
+            if (cep.length === 9) {
+                fetch(`https://viacep.com.br/ws/${cep.replace('-', '')}/json/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.erro) {
+                        cidadeInput.value = data.localidade;
+                        estadoInput.value = data.uf;
+                        enderecoSection.style.display = 'flex';
+                    } else {
+                        alert("CEP não encontrado.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Erro ao buscar CEP:", error);
+                    alert("Erro ao buscar CEP. Verifique e tente novamente.");
+                });
+            } else {
+                alert("Por favor, insira um CEP válido.");
+            }
+        }
+
+        function formatCPF(cpfField) {
+            let cpf = cpfField.value.replace(/\D/g, '');
+            if (cpf.length > 11) cpf = cpf.slice(0, 11);
+            cpfField.value = cpf.replace(/(\d{3})(\d)/, '$1.$2')
+                               .replace(/(\d{3})(\d)/, '$1.$2')
+                               .replace(/(\d{3})(\d{2})$/, '$1-$2');
+        }
+
+        function formatPhone(phoneField) {
+            let phone = phoneField.value.replace(/\D/g, '');
+            if (phone.length > 11) phone = phone.slice(0, 11);
+            phoneField.value = phone.replace(/(\d{2})(\d)/, '($1) $2')
+                                   .replace(/(\d{5})(\d)/, '$1-$2');
+        }
+
+        function formatCEP(cepField) {
+            let cep = cepField.value.replace(/\D/g, '');
+            if (cep.length > 8) cep = cep.slice(0, 8);
+            cepField.value = cep.replace(/(\d{5})(\d)/, '$1-$2');
+        }
+
+        function carregarCarrinho() {
+            let carrinho = JSON.parse(sessionStorage.getItem('cart')) || [];
+            let listaItens = document.getElementById('items-list');
+            listaItens.innerHTML = '';
+            let total = 0;
+
+            carrinho.forEach(item => {
+                let tr = document.createElement('tr');
+                
+                let tdTitle = document.createElement('td');
+                tdTitle.textContent = item.title;
+                tr.appendChild(tdTitle);
+
+                let tdQuantity = document.createElement('td');
+                let inputQuantity = document.createElement('input');
+                inputQuantity.type = 'number';
+                inputQuantity.value = item.quantity;
+                inputQuantity.min = '1';
+                inputQuantity.id = `quantity-${item.productId}`;
+                inputQuantity.name = `quantity-${item.productId}`;
+                inputQuantity.onchange = function() { updateQuantity(this, item.productId); };
+                tdQuantity.appendChild(inputQuantity);
+                tr.appendChild(tdQuantity);
+
+                let tdUnitPrice = document.createElement('td');
+                tdUnitPrice.textContent = `R$ ${item.unit_price.toFixed(2)}`;
+                tr.appendChild(tdUnitPrice);
+
+                let tdTotalPrice = document.createElement('td');
+                tdTotalPrice.textContent = `R$ ${(item.unit_price * item.quantity).toFixed(2)}`;
+                tr.appendChild(tdTotalPrice);
+
+                let tdRemove = document.createElement('td');
+                let btnRemove = document.createElement('button');
+                btnRemove.textContent = 'Remover';
+                btnRemove.className = 'btn-remove';
+                btnRemove.onclick = function() {
+                    removeItem(item.productId);
+                };
+                tdRemove.appendChild(btnRemove);
+                tr.appendChild(tdRemove);
+
+                listaItens.appendChild(tr);
+
+                total += item.unit_price * item.quantity;
+            });
+
+            document.getElementById('total-price').innerText = total.toFixed(2);
+            document.getElementById('total-com-frete').innerText = total.toFixed(2);
+        }
+
+        function updateQuantity(input, productId) {
+            let carrinho = JSON.parse(sessionStorage.getItem('cart')) || [];
+            
+            let item = carrinho.find(item => item.productId === productId);
+            if (item) {
+                item.quantity = parseInt(input.value);
+            }
+            
+            sessionStorage.setItem('cart', JSON.stringify(carrinho));
+            carregarCarrinho();
+
+            document.getElementById('qr_code_image').style.display = 'none';
+            document.getElementById('pix_code').style.display = 'none';
+            document.getElementById('qr_code_container').style.display = 'none';
+
+            resetFreight();
+        }
+
+        function removeItem(productId) {
+            let carrinho = JSON.parse(sessionStorage.getItem('cart')) || [];
+            carrinho = carrinho.filter(item => item.productId !== productId);
+            sessionStorage.setItem('cart', JSON.stringify(carrinho));
+            carregarCarrinho();
+
+            document.getElementById('qr_code_image').style.display = 'none';
+            document.getElementById('pix_code').style.display = 'none';
+            document.getElementById('qr_code_container').style.display = 'none';
+
+            resetFreight();
+        }
+
+        function calcularFrete() {
+            let cep = document.querySelector('input[name="cep"]').value;
+            const cleanedCep = cep.replace(/\D/g, '');
+
+            if (cleanedCep.length !== 8) {
+                alert("CEP inválido. Por favor, insira um CEP correto.");
+                return;
+            }
+
+            fetch(`${backendUrl}/calculate_shipping`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    from_postal_code: '14340-000',
+                    to_postal_code: cleanedCep,
+                    services: '1,2,17',
+                    package: {
+                        height: 3,
+                        width: 11,
+                        length: 16,
+                        weight: 0.3
+                    },
+                    options: {
+                        own_hand: false,
+                        receipt: false,
+                        insurance_value: 100.00
+                    }
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (Array.isArray(data) && data.length > 0) {
+                    let freteOptions = data.map((item, index) => {
+                        return `
+                            <label>
+                                <input type="radio" name="frete" value="${item.price}" data-index="${index}" onchange="atualizarFrete(${item.price})">
+                                Serviço: ${item.name} - Valor: R$ ${item.price.toFixed(2)} - Prazo de entrega: ${item.delivery_time} dias úteis
+                            </label>
+                        `;
+                    }).join('');
+                    
+                    document.getElementById('frete-result').innerHTML = freteOptions;
+                } else {
+                    alert("Não foi possível calcular o frete.");
+                }
+            })
+            .catch(error => {
+                alert("Erro ao calcular o frete. Verifique o CEP e tente novamente.");
+            });
+        }
+
+        function atualizarFrete(valorFrete) {
+            let total = parseFloat(document.getElementById('total-price').innerText.replace("R$ ", ""));
+            document.getElementById('frete-price').innerText = `R$ ${valorFrete.toFixed(2)}`;
+            document.getElementById('total-com-frete').innerText = `R$ ${(total + valorFrete).toFixed(2)}`;
+
+            document.getElementById('qr_code_image').style.display = 'none';
+            document.getElementById('pix_code').style.display = 'none';
+            document.getElementById('qr_code_container').style.display = 'none';
+        }
+
+        function resetFreight() {
+            document.getElementById('frete-price').innerText = "0,00";
+            document.getElementById('total-com-frete').innerText = document.getElementById('total-price').innerText;
+            document.getElementById('frete-result').innerHTML = ""; 
+        }
+
+        carregarCarrinho();
+
+        document.querySelectorAll('input[name="payment-method"]').forEach((radio) => {
+            radio.addEventListener('change', function() {
+                const cardInfo = document.getElementById('card-info');
+                const cardFields = document.querySelectorAll('#cardNumber, #cardExpirationMonth, #cardExpirationYear, #securityCode, #cardholderName');
+
+                if (this.value === 'credito') {
+                    cardInfo.style.display = 'block';
+                    cardFields.forEach(field => {
+                        field.removeAttribute('disabled');
+                        field.setAttribute('required', 'required');
+                    });
+                } else {
+                    cardInfo.style.display = 'none';
+                    cardFields.forEach(field => {
+                        field.removeAttribute('required');
+                        field.setAttribute('disabled', 'disabled');
+                    });
+                }
+
+                document.getElementById('qr_code_image').style.display = 'none';
+                document.getElementById('pix_code').style.display = 'none';
+                document.getElementById('qr_code_container').style.display = 'none';
+            });
+        });
+
+        document.getElementById('cardNumber').addEventListener('keyup', function () {
+            if (this.value.length >= 6) {
+                getInstallments(); 
+            }
+        });
+
+        function getInstallments() {
+            const cardBin = document.getElementById('cardNumber').value.substring(0, 6);
+            const totalAmount = parseFloat(document.getElementById('total-com-frete').innerText.replace('R$', '').replace(',', '.'));
+
+            // Verifica se o BIN é válido (6 dígitos)
+            if (cardBin.length !== 6) {
+                console.error('BIN inválido: ', cardBin);
+                alert('Por favor, insira os 6 primeiros dígitos do cartão.');
+                return;
+            }
+
+            // Verifica se o totalAmount é válido
+            if (isNaN(totalAmount) || totalAmount <= 0) {
+                console.error('Montante inválido: ', totalAmount);
+                alert('Erro no valor total. Verifique o total da compra.');
+                return;
+            }
+
+            // Chamada para buscar as parcelas
+            mp.getInstallments({
+                amount: totalAmount,
+                bin: cardBin
+            }).then(response => {
+                const installmentsOptions = response[0].payer_costs;
+                const installmentsSelect = document.getElementById('installments');
+                installmentsSelect.innerHTML = '';
+
+                if (installmentsOptions && installmentsOptions.length > 0) {
+                    installmentsOptions.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = option.installments;
+                        optionElement.text = `${option.installments} parcelas de R$ ${option.installment_amount.toFixed(2)} (Total: R$ ${option.total_amount.toFixed(2)})`;
+                        installmentsSelect.appendChild(optionElement);
+                    });
+
+                    installmentsSelect.style.display = 'block'; // Exibe as opções de parcelas
+                } else {
+                    console.error('Erro ao obter opções de parcelamento:', response);
+                    alert('Erro ao obter as opções de parcelamento.');
+                }
+            }).catch(error => {
+                console.error('Erro ao buscar parcelas:', error);
+                alert('Erro ao buscar parcelas.');
+            });
+        }
+
+        document.getElementById('submit-button').addEventListener('click', function(e) {
+            e.preventDefault();
+
+            document.querySelectorAll('.error-message').forEach(span => span.textContent = '');
+
+            const nome = document.querySelector('input[name="nome"]').value.trim();
+            const cpf = document.querySelector('input[name="cpf"]').value.trim();
+            const email = document.querySelector('input[name="email"]').value.trim();
+            const contato = document.querySelector('input[name="contato"]').value.trim();
+            const rua = document.querySelector('input[name="rua"]').value.trim();
+            const numero = document.querySelector('input[name="numero"]').value.trim();
+            const bairro = document.querySelector('input[name="bairro"]').value.trim();
+            const cidade = document.querySelector('input[name="cidade"]').value.trim();
+            const estado = document.querySelector('input[name="estado"]').value.trim();
+            const cep = document.querySelector('input[name="cep"]').value.trim();
+            const complemento = document.querySelector('input[name="complemento"]').value.trim();
+            const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
+            const selectedFreight = document.querySelector('input[name="frete"]:checked');
+            const totalValue = Number(document.getElementById('total-com-frete').innerText.replace('R$', '').replace(',', '.')).toFixed(2);
+
+            let formIsValid = true;
+
+            if (!nome) {
+                document.getElementById('nome-error').textContent = "Nome é obrigatório.";
+                formIsValid = false;
+            }
+
+            if (!cpf) {
+                document.getElementById('cpf-error').textContent = "CPF é obrigatório.";
+                formIsValid = false;
+            }
+
+            if (!email) {
+                document.getElementById('email-error').textContent = "E-mail é obrigatório.";
+                formIsValid = false;
+            }
+
+            if (!contato) {
+                document.getElementById('contato-error').textContent = "Contato é obrigatório.";
+                formIsValid = false;
+            }
+
+            if (!rua) {
+                alert("O campo 'Rua' é obrigatório.");
+                formIsValid = false;
+            }
+
+            if (!numero) {
+                alert("O campo 'Número' é obrigatório.");
+                formIsValid = false;
+            }
+
+            if (!bairro) {
+                alert("O campo 'Bairro' é obrigatório.");
+                formIsValid = false;
+            }
+
+            if (!cidade) {
+                alert("O campo 'Cidade' é obrigatório.");
+                formIsValid = false;
+            }
+
+            if (!estado) {
+                alert("O campo 'Estado' é obrigatório.");
+                formIsValid = false;
+            }
+
+            if (!cep) {
+                alert("O campo 'CEP' é obrigatório.");
+                formIsValid = false;
+            }
+
+            if (!selectedFreight) {
+                alert("Por favor, selecione uma opção de frete.");
+                formIsValid = false;
+            } else {
+                console.log("Frete selecionado:", selectedFreight.value);
+            }
+
+            if (!formIsValid) {
+                return;
+            }
+
+            const [first_name, ...last_name_parts] = nome.split(' ');
+            const last_name = last_name_parts.join(' ');
+
+            const customer = {
+                first_name: first_name,
+                last_name: last_name,
+                cpf: cpf,
+                email: email,
+                contato: contato,
+                cep: cep,
+                rua: rua,
+                numero: numero,
+                bairro: bairro,
+                cidade: cidade,
+                estado: estado,
+                complemento: complemento
+            };
+
+            const items = JSON.parse(sessionStorage.getItem('cart')).map(item => ({
+                id: item.productId,
+                title: item.title,
+                description: item.description || "Produto sem descrição",
+                quantity: item.quantity,
+                unit_price: parseFloat(item.unit_price),
+                category_id: item.category_id || "others"
+            }));
+
+            const external_reference = `order_${Date.now()}`;
+
+            mp.createCardToken({
+                cardNumber: document.getElementById('cardNumber').value,
+                expirationMonth: document.getElementById('cardExpirationMonth').value,
+                expirationYear: document.getElementById('cardExpirationYear').value,
+                securityCode: document.getElementById('securityCode').value,
+                cardholderName: document.getElementById('cardholderName').value,
+                identificationType: 'CPF',
+                identificationNumber: cpf.replace(/\D/g, '')
+            }).then(function(response) {
+                const paymentData = {
+                    token: response.id,
+                    paymentMethod: paymentMethod,
+                    customer: customer,
+                    freight: parseFloat(selectedFreight.value),
+                    total: totalValue,
+                    items: items,
+                    external_reference: external_reference
+                };
+
+                console.log("Dados enviados para o backend:", JSON.stringify(paymentData, null, 2));
+
+                fetch(`${backendUrl}/process_payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(paymentData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Dados recebidos do backend:", data);
+
+                    if (data.status === 'approved') {
+                        alert('Pagamento aprovado com sucesso!');
+                        window.location.href = '/success';
+                    } else if (data.status === 'pending' && paymentMethod === 'pix') {
+                        document.getElementById('qr_code_image').src = `data:image/png;base64,${data.qr_code_base64}`;
+                        document.getElementById('qr_code_image').style.display = 'block';
+                        document.getElementById('pix_code').value = data.qr_code;
+                        document.getElementById('pix_code').style.display = 'block';
+                        
+                        document.getElementById('qr_code_container').style.display = 'block';
+
+                        alert("Pagamento pendente. Use o QR Code para finalizar.");
+                    } else {
+                        alert(`Erro no pagamento: ${data.message}`);
+                    }
+                })
+                .catch(error => {
+                    console.error("Erro no frontend:", error.message);
+                    alert(`Erro ao finalizar compra: ${error.message}`);
+                });
+
+            }).catch(function(error) {
+                console.error("Erro ao gerar token do cartão:", error);
+                alert("Erro ao processar o pagamento. Verifique os dados do cartão e tente novamente.");
+            });
+        });
+
+    </script>
+
+    <style>
+        .btn-remove {
+            background-color: #FFA500;
+            color: #000000;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .btn-remove:hover {
+            background-color: #FF8C00;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            font-size: 1em;
+            text-align: center;
+            border: 1px solid #FFA500;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 0.875em;
+            margin-top: 5px;
+        }
+
+        #qr_code_container {
+            margin-top: 20px;
+        }
+
+        #qr_code_image {
+            width: 200px;
+            height: 200px;
+        }
+
+        #copy-button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #FFA500;
+            border: none;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #copy-button:hover {
+            background-color: #FF8C00;
+        }
+    </style>
+
+</body>
+</html>
