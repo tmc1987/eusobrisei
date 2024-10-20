@@ -8,35 +8,51 @@ const QRCode = require('qrcode');
 
 const app = express();
 app.use(express.json());
+
+// Lista de origens permitidas
+const allowedOrigins = [
+    'https://eusobrisei.vercel.app',
+    'https://eusobrisei-git-master-thiagos-projects-bf2fb09b.vercel.app'
+];
+
+// Middleware CORS com suporte para múltiplas origens
 app.use(cors({
-    origin: 'https://eusobrisei.vercel.app',
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        } else {
+            return callback(new Error('Not allowed by CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Middleware para lidar com requisições preflight (OPTIONS)
+app.options('*', cors());
 
 app.use(express.static(path.join(__dirname)));
 
-// Configura a chave de acesso do Mercado Pago
+// Configuração do Mercado Pago
 mercadopago.configure({
-    access_token: 'APP_USR-4115909006959144-092213-b8561437409fd30d77848352287f57c9-1207255849' // Use seu token aqui
+    access_token: 'APP_USR-4115909006959144-092213-b8561437409fd30d77848352287f57c9-1207255849'
 });
 
+// Variáveis globais
 let cart = [];
 let selectedFreight = 0;
-let generatedQRCode = null; // Variável para armazenar o QR code gerado
+let generatedQRCode = null;
 
 // Função para recalcular o total do carrinho
 function calculateCartTotal() {
     const itemsTotal = cart.reduce((total, item) => total + (item.unit_price * item.quantity), 0);
-    return parseFloat(itemsTotal + selectedFreight).toFixed(2); // Inclui o frete no total
+    return parseFloat(itemsTotal + selectedFreight).toFixed(2);
 }
 
 // Recalcula o frete e invalida o QR code gerado anteriormente
 function resetFreightAndQRCode() {
-    selectedFreight = 0; // Zera o valor do frete
-    generatedQRCode = null; // Invalida o QR code gerado anteriormente
+    selectedFreight = 0;
+    generatedQRCode = null;
 }
 
 // Rota para adicionar itens ao carrinho
@@ -48,8 +64,8 @@ app.post('/add_to_cart', (req, res) => {
     } else {
         cart.push({ productId, title, unit_price, quantity, category_id, description });
     }
-    resetFreightAndQRCode(); // Recalcula o frete e QR Code
-    const total = calculateCartTotal(); // Recalcula o total sem frete
+    resetFreightAndQRCode();
+    const total = calculateCartTotal();
     res.json({ message: "Produto adicionado ao carrinho", cart, total });
 });
 
@@ -57,8 +73,8 @@ app.post('/add_to_cart', (req, res) => {
 app.post('/remove_from_cart', (req, res) => {
     const { productId } = req.body;
     cart = cart.filter(item => item.productId !== productId);
-    resetFreightAndQRCode(); // Recalcula o frete e QR Code
-    const total = calculateCartTotal(); // Recalcula o total sem frete
+    resetFreightAndQRCode();
+    const total = calculateCartTotal();
     res.json({ message: "Produto removido do carrinho", cart, total });
 });
 
@@ -68,15 +84,15 @@ app.post('/update_cart_item', (req, res) => {
     const existingItemIndex = cart.findIndex(item => item.productId === productId);
     if (existingItemIndex > -1 && quantity > 0) {
         cart[existingItemIndex].quantity = quantity;
-        resetFreightAndQRCode(); // Recalcula o frete e QR Code
+        resetFreightAndQRCode();
     }
-    const total = calculateCartTotal(); // Recalcula o total sem frete
+    const total = calculateCartTotal();
     res.json({ message: "Quantidade do produto atualizada", cart, total });
 });
 
 // Rota para obter os itens do carrinho e o total
 app.get('/checkout_items', (req, res) => {
-    const total = calculateCartTotal(); // Inclui o frete no total calculado
+    const total = calculateCartTotal();
     res.json({ cart, total });
 });
 
@@ -97,7 +113,7 @@ app.post('/calculate_shipping', async (req, res) => {
             options: options || { own_hand: false, receipt: false, insurance_value: 0 }
         }, {
             headers: {
-                'Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Mjc4OTg1NTUsInN1YiI6ImowM3M2M25lZ0ZRWmtPMjU5TjBZS2VhN1gwRTMifQ.qhubwcKlFs61AHq6XR22MtONANAaGaDCcFPhIQj_vKc', // Sua chave da API aqui
+                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Mjc4OTg1NTUsInN1YiI6ImowM3M2M25lZ0ZRWmtPMjU5TjBZS2VhN1gwRTMifQ.qhubwcKlFs61AHq6XR22MtONANAaGaDCcFPhIQj_vKc',
                 'User-Agent': 'EuSoBrisei (thiago_mc87@hotmail.com)'
             }
         });
@@ -118,8 +134,8 @@ app.post('/select_freight', (req, res) => {
     const { freightPrice } = req.body;
     if (freightPrice > 0) {
         selectedFreight = parseFloat(freightPrice);
-        generatedQRCode = null; // Invalida o QR code gerado anteriormente
-        const total = calculateCartTotal(); // Recalcula o total incluindo o frete
+        generatedQRCode = null;
+        const total = calculateCartTotal();
         return res.json({ message: 'Frete selecionado', selectedFreight, total });
     } else {
         return res.status(400).json({ message: 'Frete inválido. Por favor, selecione um frete válido.' });
@@ -133,7 +149,6 @@ app.post('/process_payment', [
     check('customer.cpf').not().isEmpty().withMessage('CPF é obrigatório'),
     check('customer.email').isEmail().withMessage('E-mail inválido'),
     check('customer.contato').not().isEmpty().withMessage('Contato é obrigatório'),
-    // Validação dos campos de endereço
     check('customer.rua').not().isEmpty().withMessage('Rua é obrigatória'),
     check('customer.numero').not().isEmpty().withMessage('Número é obrigatório'),
     check('customer.bairro').not().isEmpty().withMessage('Bairro é obrigatório'),
@@ -150,8 +165,8 @@ app.post('/process_payment', [
     }
 
     const { token, paymentMethod, customer, freight, items, external_reference, directItem } = req.body;
-
     const freightAmount = selectedFreight > 0 ? selectedFreight : parseFloat(freight);
+
     if (freightAmount <= 0) {
         return res.status(400).json({ message: "Frete inválido ou não selecionado. Por favor, selecione uma opção de frete." });
     }
@@ -163,8 +178,7 @@ app.post('/process_payment', [
     }
 
     const totalAmount = parseFloat(
-        itemsToProcess.reduce((total, item) => total + (item.unit_price * item.quantity), 0) 
-        + freightAmount
+        itemsToProcess.reduce((total, item) => total + (item.unit_price * item.quantity), 0) + freightAmount
     ).toFixed(2);
 
     console.log("Valor total enviado ao Mercado Pago (produtos + frete):", totalAmount);
@@ -188,7 +202,7 @@ app.post('/process_payment', [
     };
 
     let payment_data = {
-        transaction_amount: parseFloat(totalAmount), // Usando o valor total (produtos + frete)
+        transaction_amount: parseFloat(totalAmount),
         description: 'Compra no site Eu Só Brisei',
         installments: paymentMethod === 'credito' ? customer.installments : 1,
         payment_method_id: paymentMethod,
@@ -215,7 +229,7 @@ app.post('/process_payment', [
 
     try {
         const payment = await mercadopago.payment.create(payment_data);
-        
+
         if (payment.body.status === 'approved') {
             res.json({ status: 'approved', paymentID: payment.body.id });
         } else if (payment.body.status === 'pending' && paymentMethod === 'pix') {
@@ -234,32 +248,7 @@ app.post('/process_payment', [
     }
 });
 
-// Rota para obter as parcelas disponíveis com base no BIN e valor total
-app.post('/get_installments', async (req, res) => {
-    const { bin, amount } = req.body;
-
-    if (!bin || !amount) {
-        return res.status(400).json({ message: 'BIN do cartão e valor total são obrigatórios.' });
-    }
-
-    try {
-        const installments = await mercadopago.payment_methods.installments.get({
-            bin: bin,
-            amount: parseFloat(amount),
-        });
-
-        if (installments.body.length > 0) {
-            res.json(installments.body[0].payer_costs); // Retorna as parcelas disponíveis
-        } else {
-            res.status(404).json({ message: 'Nenhuma parcela encontrada para esse cartão.' });
-        }
-    } catch (error) {
-        console.error('Erro ao obter parcelas:', error);
-        res.status(500).json({ message: 'Erro ao obter parcelas', error: error.message });
-    }
-});
-
-// Novo endpoint para emissão de etiquetas com SuperFrete
+// Rota para emissão de etiquetas com SuperFrete
 app.post('/emitir_etiqueta', async (req, res) => {
     const { destinatario, remetente, pacote, servico } = req.body;
 
@@ -297,10 +286,10 @@ app.post('/emitir_etiqueta', async (req, res) => {
                 length: pacote.length,
                 weight: pacote.weight,
             },
-            service: servico // ID do serviço de frete selecionado
+            service: servico
         }, {
             headers: {
-                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Mjc4OTg1NTUsInN1YiI6ImowM3M2M25lZ0ZRWmtPMjU5TjBZS2VhN1gwRTMifQ.qhubwcKlFs61AHq6XR22MtONANAaGaDCcFPhIQj_vKc', // Sua chave da API aqui
+                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Mjc4OTg1NTUsInN1YiI6ImowM3M2M25lZ0ZRWmtPMjU5TjBZS2VhN1gwRTMifQ.qhubwcKlFs61AHq6XR22MtONANAaGaDCcFPhIQj_vKc',
                 'User-Agent': 'EuSoBrisei (thiago_mc87@hotmail.com)'
             }
         });
@@ -316,9 +305,9 @@ app.post('/emitir_etiqueta', async (req, res) => {
     }
 });
 
-// Novo endpoint para testar geração de QR Code
+// Rota para teste de geração de QR Code
 app.get('/test_qr_code', (req, res) => {
-    const testString = 'Teste de QR Code'; // Valor de teste
+    const testString = 'Teste de QR Code';
     QRCode.toDataURL(testString, { type: 'image/png' }, (err, url) => {
         if (err) {
             return res.status(500).send('Erro ao gerar QR Code');
