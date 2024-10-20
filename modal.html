@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modal com Botões - Comprar e Incluir no Carrinho</title>
+    <style>
+        /* Estilos para o modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #1C1C1C;
+            color: #FFA500;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            position: relative;
+        }
+
+        .close {
+            color: #fff;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover, .close:focus {
+            color: #FFA500;
+            text-decoration: none;
+        }
+
+        .btn {
+            background-color: #008080;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            width: 45%;
+            margin: 10px;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background-color: #FFA500;
+        }
+
+        .product-details {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .image-slider {
+            position: relative;
+            width: 100%;
+            height: auto;
+        }
+
+        .image-slider img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .image-slider img.active {
+            display: block;
+        }
+
+        .slider-nav {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            transform: translateY(-50%);
+        }
+
+        .slider-nav button {
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .slider-nav button:hover {
+            background-color: rgba(255, 165, 0, 0.7);
+        }
+
+        .product-stock {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Modal com Botões Comprar e Incluir no Carrinho</h1>
+
+    <!-- Botão para abrir o modal -->
+    <button id="openModalBtn" class="btn">+ INFORMAÇÕES</button>
+
+    <!-- Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeModalBtn">&times;</span>
+            <div class="product-details">
+                <h2 id="productName">Nome do Produto</h2>
+                <div class="image-slider" id="imageSlider">
+                    <!-- Imagens do produto serão inseridas aqui dinamicamente -->
+                    <img src="imagem1.jpg" alt="Produto Imagem 1" class="active">
+                    <img src="imagem2.jpg" alt="Produto Imagem 2">
+                    <img src="imagem3.jpg" alt="Produto Imagem 3">
+                    <img src="imagem4.jpg" alt="Produto Imagem 4">
+                    <div class="slider-nav">
+                        <button id="prevBtn">&#10094;</button>
+                        <button id="nextBtn">&#10095;</button>
+                    </div>
+                </div>
+                <p id="productDescription">Descrição breve do produto.</p>
+                <p id="productPrice">Preço: R$ 100,00</p>
+                <p id="productStock" class="product-stock"></p> <!-- Estoque disponível será exibido aqui -->
+            </div>
+            <button class="btn" id="buyBtn">Comprar</button>
+            <button class="btn" id="addToCartBtn">Incluir no Carrinho</button>
+        </div>
+    </div>
+
+    <script>
+        // Abrir e fechar o modal
+        const openModalBtn = document.getElementById('openModalBtn');
+        const modal = document.getElementById('productModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const images = document.querySelectorAll('.image-slider img');
+        let currentImageIndex = 0;
+
+        // Função para atualizar a exibição da imagem ativa
+        function updateImageDisplay() {
+            images.forEach((img, index) => {
+                img.classList.toggle('active', index === currentImageIndex);
+            });
+        }
+
+        // Evento para avançar para a próxima imagem
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            currentImageIndex = (currentImageIndex + 1) % images.length;
+            updateImageDisplay();
+        });
+
+        // Evento para voltar para a imagem anterior
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
+            updateImageDisplay();
+        });
+
+        // Dados do produto, isso deve ser passado de forma dinâmica quando o botão de informações for clicado
+        let currentProduct = {
+            name: 'Colar de Macramé',
+            price: 95.00,
+            images: [
+                'https://via.placeholder.com/150/0000FF',
+                'https://via.placeholder.com/150/FF0000',
+                'https://via.placeholder.com/150/00FF00',
+                'https://via.placeholder.com/150/FFFF00'
+            ],
+            description: 'Colar artesanal feito com técnica de macramé, com pedra de ágata cornalina.',
+            stock: 0
+        };
+
+        openModalBtn.onclick = function () {
+            // Simulando uma verificação de estoque do produto, em um sistema real viria de uma chamada ao backend
+            fetch(`/get-product-stock?productName=${currentProduct.name}`)
+                .then(response => response.json())
+                .then(data => {
+                    currentProduct.stock = data.stock;
+
+                    // Carregar os detalhes do produto no modal
+                    document.getElementById('productName').textContent = currentProduct.name;
+                    document.getElementById('productPrice').textContent = `Preço: R$ ${currentProduct.price.toFixed(2)}`;
+                    document.getElementById('productDescription').textContent = currentProduct.description;
+                    document.getElementById('productStock').textContent = `Estoque disponível: ${currentProduct.stock}`;
+
+                    // Carregar imagens dinâmicas
+                    images.forEach((img, index) => {
+                        img.src = currentProduct.images[index];
+                    });
+                    updateImageDisplay();
+
+                    // Desabilita botões se o produto estiver esgotado
+                    if (currentProduct.stock === 0) {
+                        document.getElementById('buyBtn').disabled = true;
+                        document.getElementById('addToCartBtn').disabled = true;
+                        document.getElementById('productStock').textContent = 'Produto Esgotado';
+                    } else {
+                        document.getElementById('buyBtn').disabled = false;
+                        document.getElementById('addToCartBtn').disabled = false;
+                    }
+
+                    modal.style.display = "flex";
+                })
+                .catch(error => {
+                    console.error('Erro ao verificar o estoque:', error);
+                    alert('Erro ao carregar informações do produto.');
+                });
+        };
+
+        closeModalBtn.onclick = function () {
+            modal.style.display = "none";
+        };
+
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        };
+
+        // Função para adicionar o produto ao carrinho
+        document.getElementById('addToCartBtn').addEventListener('click', function () {
+            const product = {
+                title: currentProduct.name,
+                unit_price: currentProduct.price,
+                quantity: 1
+            };
+
+            // Adiciona o produto ao carrinho acumulativo no sessionStorage
+            let cart = JSON.parse(sessionStorage.getItem('cart')) || [];
+            const existingItem = cart.find(item => item.title === product.title);
+
+            if (existingItem) {
+                existingItem.quantity += 1; // Se já existe, apenas aumenta a quantidade
+            } else {
+                cart.push(product); // Se não existe, adiciona o novo produto
+            }
+
+            sessionStorage.setItem('cart', JSON.stringify(cart));
+            alert('Produto adicionado ao carrinho!');
+        });
+
+        // Função para simular armazenamento no sessionStorage e redirecionamento para o checkout
+        document.getElementById('buyBtn').addEventListener('click', function () {
+            const product = {
+                productId: 'unique_product_id', // Substitua por um ID único para o produto
+                title: currentProduct.name,
+                unit_price: currentProduct.price,
+                quantity: 1
+            };
+
+            // Zera o carrinho e armazena o novo produto
+            let cart = [];
+            cart.push(product);
+            sessionStorage.setItem('cart', JSON.stringify(cart));
+            window.location.href = 'checkout.html'; // Redireciona para a página de checkout
+        });
+    </script>
+</body>
+</html>

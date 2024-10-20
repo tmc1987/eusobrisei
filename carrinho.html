@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Seu Carrinho</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Certifique-se de que o caminho do CSS esteja correto -->
+    <style>
+        /* Estilos adicionais para o carrinho */
+        .cart-container {
+            margin: 50px auto;
+            max-width: 800px;
+            padding: 20px;
+            background-color: #1C1C1C;
+            border-radius: 10px;
+            color: #FFA500;
+        }
+
+        ul#cart-items {
+            padding: 0;
+        }
+
+        ul#cart-items li {
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-bottom: 1px solid #FFA500;
+        }
+
+        ul#cart-items li input[type="number"] {
+            width: 50px;
+            padding: 5px;
+            margin-right: 10px;
+            text-align: center;
+        }
+
+        ul#cart-items li button {
+            padding: 5px 10px;
+            background-color: #ff5e00;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        h2, h3 {
+            color: #FFA500;
+        }
+
+        h3 {
+            margin-top: 20px;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #FFA500;
+            padding-bottom: 10px;
+        }
+
+        .header-row div {
+            flex-basis: 40%;
+            text-align: left;
+        }
+
+        .header-row div.quantity-header {
+            flex-basis: 10%;
+            text-align: center;
+        }
+
+        button.finalizar-compra {
+            background-color: #008080;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button.finalizar-compra:hover {
+            background-color: #FFA500;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Menu Principal será carregado dinamicamente -->
+    <header>
+        <!-- O conteúdo do menu será inserido dinamicamente via JavaScript -->
+    </header>
+
+    <div class="cart-container">
+        <h2>Seu Carrinho</h2>
+
+        <!-- Cabeçalho dos itens e quantidade -->
+        <div class="header-row">
+            <div>ITENS</div>
+            <div class="quantity-header">QUANTIDADE</div>
+            <div></div> <!-- Espaço para o botão "Remover" -->
+        </div>
+
+        <ul id="cart-items"></ul>
+        <h3>Total: R$ <span id="total-amount">0</span></h3> <!-- Exibe o valor total -->
+        <button class="finalizar-compra" onclick="finalizarCompra()">Finalizar Compra</button>
+    </div>
+
+    <script>
+        let cart = JSON.parse(sessionStorage.getItem('cart')) || []; // Busca os itens do carrinho do sessionStorage
+
+        function renderCart() {
+            let cartItems = document.getElementById('cart-items');
+            let totalAmount = 0; // Inicia o total como 0
+            cartItems.innerHTML = ""; // Limpa o conteúdo atual
+
+            cart.forEach((item, index) => {
+                let li = document.createElement('li');
+                li.innerHTML = `
+                    ${item.title} - R$${item.unit_price} x 
+                    <input type="number" value="${item.quantity}" min="1" onchange="updateQuantity(${index}, this.value)">
+                    <button onclick="removeItem(${index})">Remover</button>
+                `;
+                cartItems.appendChild(li);
+
+                // Calcula o total conforme a quantidade de cada item
+                totalAmount += item.unit_price * item.quantity;
+            });
+
+            // Atualiza o valor total na página
+            document.getElementById('total-amount').textContent = totalAmount.toFixed(2);
+        }
+
+        // Atualiza a quantidade do item no carrinho
+        function updateQuantity(index, newQuantity) {
+            cart[index].quantity = parseInt(newQuantity);
+            sessionStorage.setItem('cart', JSON.stringify(cart)); // Armazena as alterações no sessionStorage
+            renderCart(); // Re-renderiza o carrinho
+        }
+
+        // Remove o item do carrinho
+        function removeItem(index) {
+            cart.splice(index, 1); // Remove o item pelo índice
+            sessionStorage.setItem('cart', JSON.stringify(cart)); // Atualiza o sessionStorage
+            renderCart(); // Re-renderiza o carrinho
+        }
+
+        // Função para finalizar a compra e abrir o checkout transparente
+        function finalizarCompra() {
+            window.location.href = 'checkout.html';  // Redireciona para a página de checkout
+        }
+
+        // Renderiza os itens do carrinho ao carregar a página
+        window.onload = renderCart;
+
+        // Carregar o menu de navegação dinamicamente
+        fetch('menu.html')
+            .then(response => response.text())
+            .then(data => {
+                document.querySelector('header').innerHTML = data;
+            })
+            .catch(error => console.log('Erro ao carregar o menu:', error));
+    </script>
+
+</body>
+</html>

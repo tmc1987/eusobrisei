@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Eu Só Brisei - Fale Conosco</title>
+    <link rel="stylesheet" href="contato.css"> <!-- Link atualizado para o CSS específico -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"> <!-- Fontes personalizadas -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- Link para Font Awesome -->
+</head>
+<body>
+
+    <!-- Menu Principal será carregado dinamicamente -->
+    <header>
+        <!-- O conteúdo do menu será inserido dinamicamente via JavaScript -->
+    </header>
+
+    <!-- Seção Fale Conosco -->
+    <section class="contato-section">
+        <h1 class="contato-title">Fale Conosco</h1>
+        <p class="contato-subtitle">Escolha a melhor forma de entrar em contato conosco:</p>
+        
+        <div class="contato-opcoes">
+            <!-- Contato via WhatsApp -->
+            <div class="contato-opcao">
+                <i class="fab fa-whatsapp fa-3x"></i>
+                <h3>WhatsApp</h3>
+                <p>Envie-nos uma mensagem pelo WhatsApp.</p>
+                <button class="btn-contato" onclick="window.location.href='https://wa.me/5516981205444'">Falar via WhatsApp</button>
+            </div>
+
+            <!-- Contato via Instagram -->
+            <div class="contato-opcao">
+                <i class="fab fa-instagram fa-3x"></i>
+                <h3>Instagram</h3>
+                <p>Siga-nos no Instagram e mande sua mensagem.</p>
+                <button class="btn-contato" onclick="window.location.href='https://www.instagram.com/eusobrisei'">Ir para Instagram</button>
+            </div>
+
+            <!-- Contato via E-mail -->
+            <div class="contato-opcao">
+                <i class="fas fa-envelope fa-3x"></i>
+                <h3>E-mail</h3>
+                <p>Envie-nos um e-mail com suas dúvidas ou solicitações.</p>
+                <button class="btn-contato" onclick="window.location.href='mailto:eusobrisei@gmail.com'">Enviar E-mail</button>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>© 2024 Eu Só Brisei. Todos os direitos reservados.</p>
+    </footer>
+
+    <script>
+        // Carregar o menu de navegação dinamicamente
+        fetch('menu.html')
+            .then(response => response.text())
+            .then(data => {
+                document.querySelector('header').innerHTML = data;
+            })
+            .catch(error => console.log('Erro ao carregar o menu:', error));
+    </script>
+
+</body>
+</html>
