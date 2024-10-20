@@ -1,8 +1,11 @@
 {
-    "routes": [
-      { "src": "/", "dest": "/public/index.html" },
-      { "src": "/checkout", "dest": "/public/checkout.html" },
-      { "src": "/contato", "dest": "/public/contato.html" }
+    "version": 2,
+    "public": "public",
+    "rewrites": [
+      {
+        "source": "/(.*)",
+        "destination": "/public/$1"
+      }
     ]
   }
   
