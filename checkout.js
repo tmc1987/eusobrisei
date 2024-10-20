@@ -220,7 +220,7 @@ document.getElementById('submit-button').addEventListener('click', function (e) 
 
 // Função para processar o pagamento
 function processarPagamento(paymentData) {
-    const backendUrl = 'https://9ed9-177-70-252-192.ngrok-free.app'; // URL HTTPS do ngrok
+    const backendUrl = 'https://eusobrisei.vercel.app'; // URL HTTPS do ngrok
 
     fetch(`${backendUrl}/process_payment`, {   
         method: 'POST',
@@ -288,7 +288,7 @@ function emitirEtiqueta(customer, selectedFreight) {
         weight: 0.3
     };
 
-    const backendUrl = 'https://9ed9-177-70-252-192.ngrok-free.app'; // URL HTTPS do ngrok
+    const backendUrl = 'https://eusobrisei.vercel.app'; // URL HTTPS do ngrok
 
     fetch(`${backendUrl}/emitir_etiqueta`, {
         method: 'POST',
@@ -423,7 +423,7 @@ function calcularFrete() {
         return;
     }
 
-    const backendUrl = 'https://9ed9-177-70-252-192.ngrok-free.app'; // URL HTTPS do ngrok
+    const backendUrl = 'https://eusobrisei.vercel.app'; // URL HTTPS do ngrok
 
     fetch(`${backendUrl}/calculate_shipping`, {
         method: 'POST',
@@ -533,7 +533,7 @@ function fetchInstallments() {
     console.log("Enviando BIN:", cardBin, " e valor total:", totalValue);
 
     // Faz a chamada para o backend
-    fetch('https://9ed9-177-70-252-192.ngrok-free.app/get_installments', {
+    fetch('https://eusobrisei.vercel.app/get_installments', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
