@@ -9,7 +9,7 @@ const QRCode = require('qrcode');
 const app = express();
 app.use(express.json());
 app.use(cors({
-    origin: '*',
+    origin: 'https://eusobrisei.vercel.app',
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     preflightContinue: false,
