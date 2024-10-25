@@ -308,7 +308,7 @@
                 return;
             }
 
-            fetch(`${backendUrl}api/calculate_shipping`, {
+            fetch(`${backendUrl}/api/calculate_shipping`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json'
@@ -580,7 +580,7 @@
 
                 console.log("Dados enviados para o backend:", JSON.stringify(paymentData, null, 2));
 
-                fetch(`${backendUrl}api/process_payment`, {
+                fetch(`${backendUrl}/api/process_payment`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(paymentData)
