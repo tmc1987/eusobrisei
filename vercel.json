@@ -1,7 +1,7 @@
 {
     "version": 2,
     "builds": [
-      { "src": "app.js", "use": "@vercel/node" },
+      { "src": "api/app.js", "use": "@vercel/node" },
       { "src": "*.html", "use": "@vercel/static" },
       { "src": "*.css", "use": "@vercel/static" },
       { "src": "*.js", "use": "@vercel/static" },
@@ -9,15 +9,15 @@
       { "src": "*.jpg", "use": "@vercel/static" }
     ],
     "routes": [
-      { "src": "/calculate_shipping", "dest": "/app.js" },
-      { "src": "/add_to_cart", "dest": "/app.js" },
-      { "src": "/remove_from_cart", "dest": "/app.js" },
-      { "src": "/update_cart_item", "dest": "/app.js" },
-      { "src": "/checkout_items", "dest": "/app.js" },
-      { "src": "/select_freight", "dest": "/app.js" },
-      { "src": "/process_payment", "dest": "/app.js" },
-      { "src": "/emitir_etiqueta", "dest": "/app.js" },
-      { "src": "/test_qr_code", "dest": "/app.js" },
+      { "src": "/api/calculate_shipping", "dest": "/api/app.js" },
+      { "src": "/api/add_to_cart", "dest": "/api/app.js" },
+      { "src": "/api/remove_from_cart", "dest": "/api/app.js" },
+      { "src": "/api/update_cart_item", "dest": "/api/app.js" },
+      { "src": "/api/checkout_items", "dest": "/api/app.js" },
+      { "src": "/api/select_freight", "dest": "/api/app.js" },
+      { "src": "/api/process_payment", "dest": "/api/app.js" },
+      { "src": "/api/emitir_etiqueta", "dest": "/api/app.js" },
+      { "src": "/api/test_qr_code", "dest": "/api/app.js" },
       { "src": "/(.*)", "dest": "/$1" }
     ]
   }
