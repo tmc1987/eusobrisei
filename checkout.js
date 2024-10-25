@@ -180,7 +180,7 @@ document.getElementById('submit-button').addEventListener('click', function (e) 
 function processarPagamento(paymentData) {
     const backendUrl = 'https://eusobrisei.vercel.app/api'; // URL do backend
 
-    fetch(`${backendUrl}/process_payment`, {
+    fetch(`${backendUrl}api/process_payment`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -242,7 +242,7 @@ function emitirEtiqueta(customer, selectedFreight) {
 
     const backendUrl = 'https://eusobrisei.vercel.app';
 
-    fetch(`${backendUrl}/emitir_etiqueta`, {
+    fetch(`${backendUrl}api/emitir_etiqueta`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -377,7 +377,7 @@ function calcularFrete() {
 
     const backendUrl = 'https://eusobrisei.vercel.app';
 
-    fetch(`${backendUrl}/calculate_shipping`, {
+    fetch(`${backendUrl}api/calculate_shipping`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -483,7 +483,7 @@ function fetchInstallments() {
     console.log("Enviando BIN:", cardBin, " e valor total:", totalValue);
 
     // Faz a chamada para o backend
-    fetch('https://eusobrisei.vercel.app/get_installments', {
+    fetch('https://eusobrisei.vercel.app/api/get_installments', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
