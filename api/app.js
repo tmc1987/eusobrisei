@@ -56,7 +56,7 @@ function resetFreightAndQRCode() {
 }
 
 // Rota para adicionar itens ao carrinho
-app.post('/add_to_cart', (req, res) => {
+app.post('api/add_to_cart', (req, res) => {
     const { productId, title, unit_price, quantity, category_id, description } = req.body;
     const existingItemIndex = cart.findIndex(item => item.productId === productId);
     if (existingItemIndex > -1) {
@@ -70,7 +70,7 @@ app.post('/add_to_cart', (req, res) => {
 });
 
 // Rota para remover itens do carrinho
-app.post('/remove_from_cart', (req, res) => {
+app.post('api/remove_from_cart', (req, res) => {
     const { productId } = req.body;
     cart = cart.filter(item => item.productId !== productId);
     resetFreightAndQRCode();
@@ -79,7 +79,7 @@ app.post('/remove_from_cart', (req, res) => {
 });
 
 // Rota para modificar a quantidade de um item no carrinho
-app.post('/update_cart_item', (req, res) => {
+app.post('api/update_cart_item', (req, res) => {
     const { productId, quantity } = req.body;
     const existingItemIndex = cart.findIndex(item => item.productId === productId);
     if (existingItemIndex > -1 && quantity > 0) {
@@ -97,7 +97,7 @@ app.get('/checkout_items', (req, res) => {
 });
 
 // Rota para calcular o frete
-app.post('/calculate_shipping', async (req, res) => {
+app.post('api/calculate_shipping', async (req, res) => {
     const { from_postal_code, to_postal_code, services, package, options } = req.body;
 
     if (!from_postal_code || !to_postal_code || !package) {
@@ -130,7 +130,7 @@ app.post('/calculate_shipping', async (req, res) => {
 });
 
 // Rota para selecionar o frete
-app.post('/select_freight', (req, res) => {
+app.post('api/select_freight', (req, res) => {
     const { freightPrice } = req.body;
     if (freightPrice > 0) {
         selectedFreight = parseFloat(freightPrice);
@@ -143,7 +143,7 @@ app.post('/select_freight', (req, res) => {
 });
 
 // Rota para processar o pagamento
-app.post('/process_payment', [
+app.post('api/process_payment', [
     check('customer.first_name').not().isEmpty().withMessage('Primeiro nome é obrigatório'),
     check('customer.last_name').not().isEmpty().withMessage('Sobrenome é obrigatório'),
     check('customer.cpf').not().isEmpty().withMessage('CPF é obrigatório'),
@@ -249,7 +249,7 @@ app.post('/process_payment', [
 });
 
 // Rota para emissão de etiquetas com SuperFrete
-app.post('/emitir_etiqueta', async (req, res) => {
+app.post('api/emitir_etiqueta', async (req, res) => {
     const { destinatario, remetente, pacote, servico } = req.body;
 
     if (!destinatario || !remetente || !pacote || !servico) {
