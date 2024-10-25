@@ -1,13 +1,23 @@
 {
     "version": 2,
     "builds": [
+      { "src": "app.js", "use": "@vercel/node" },
       { "src": "*.html", "use": "@vercel/static" },
       { "src": "*.css", "use": "@vercel/static" },
       { "src": "*.js", "use": "@vercel/static" },
-      { "src": "public/**", "use": "@vercel/static" }
+      { "src": "*.png", "use": "@vercel/static" },
+      { "src": "*.jpg", "use": "@vercel/static" }
     ],
     "routes": [
-      { "src": "/", "dest": "/index.html" },
+      { "src": "/calculate_shipping", "dest": "/app.js" },
+      { "src": "/add_to_cart", "dest": "/app.js" },
+      { "src": "/remove_from_cart", "dest": "/app.js" },
+      { "src": "/update_cart_item", "dest": "/app.js" },
+      { "src": "/checkout_items", "dest": "/app.js" },
+      { "src": "/select_freight", "dest": "/app.js" },
+      { "src": "/process_payment", "dest": "/app.js" },
+      { "src": "/emitir_etiqueta", "dest": "/app.js" },
+      { "src": "/test_qr_code", "dest": "/app.js" },
       { "src": "/(.*)", "dest": "/$1" }
     ]
   }
