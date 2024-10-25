@@ -9,15 +9,15 @@
       { "src": "*.jpg", "use": "@vercel/static" }
     ],
     "routes": [
-      { "src": "/api/calculate_shipping", "dest": "/api/app.js" },
-      { "src": "/api/add_to_cart", "dest": "/api/app.js" },
-      { "src": "/api/remove_from_cart", "dest": "/api/app.js" },
-      { "src": "/api/update_cart_item", "dest": "/api/app.js" },
-      { "src": "/api/checkout_items", "dest": "/api/app.js" },
-      { "src": "/api/select_freight", "dest": "/api/app.js" },
-      { "src": "/api/process_payment", "dest": "/api/app.js" },
-      { "src": "/api/emitir_etiqueta", "dest": "/api/app.js" },
-      { "src": "/api/test_qr_code", "dest": "/api/app.js" },
+      { "src": "/calculate_shipping", "dest": "api/app.js" },
+      { "src": "/add_to_cart", "dest": "api/app.js" },
+      { "src": "/remove_from_cart", "dest": "api/app.js" },
+      { "src": "/update_cart_item", "dest": "api/app.js" },
+      { "src": "/checkout_items", "dest": "api/app.js" },
+      { "src": "/select_freight", "dest": "api/app.js" },
+      { "src": "/process_payment", "dest": "api/app.js" },
+      { "src": "/emitir_etiqueta", "dest": "api/app.js" },
+      { "src": "/test_qr_code", "dest": "api/app.js" },
       { "src": "/(.*)", "dest": "/$1" }
     ]
   }
