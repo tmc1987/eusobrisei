@@ -178,7 +178,7 @@ document.getElementById('submit-button').addEventListener('click', function (e) 
 
 // Função para processar o pagamento
 function processarPagamento(paymentData) {
-    const backendUrl = 'https://eusobrisei.vercel.app'; // URL do backend
+    const backendUrl = 'https://eusobrisei.vercel.app/api'; // URL do backend
 
     fetch(`${backendUrl}/process_payment`, {
         method: 'POST',
