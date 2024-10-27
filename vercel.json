@@ -1,9 +1,9 @@
 {
     "version": 2,
     "routes": [
-      { "src": "/calculate_shipping", "dest": "api/app.js" },
-      { "src": "/add_to_cart", "dest": "api/app.js" },
-      { "src": "/remove_from_cart", "dest": "api/app.js" },
+      { "src": "/api/calculate_shipping", "dest": "api/app.js" },
+      { "src": "/api/add_to_cart", "dest": "api/app.js" },
+      { "src": "/api/remove_from_cart", "dest": "api/app.js" },
      
       { "src": "/(.*)", "dest": "/$1" }
     ]
