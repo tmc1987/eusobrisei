@@ -1,0 +1,24 @@
+{
+  "interval_seconds": 5,
+  "log_file": "logs/agent.log",
+  "thresholds": {
+    "cpu_percent": 85,
+    "ram_percent": 85,
+    "disk_percent": 90,
+    "temperature_c": 85,
+    "hung_process_seconds": 60
+  },
+  "actions": {
+    "enabled": true,
+    "safe_mode": true,
+    "priority_rollback_seconds": 120,
+    "allowed_priority_adjustments": true,
+    "auto_restart_hung_process": false
+  },
+  "processes": {
+    "critical_names": ["explorer.exe", "svchost.exe"],
+    "restart_commands": {
+      "notepad.exe": "start notepad.exe"
+    }
+  }
+}
