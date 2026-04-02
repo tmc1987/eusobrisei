@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Painel Técnico (Operacional + Policies Dev)</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:20px}
+    table{border-collapse:collapse;width:100%;margin:10px 0}
+    th,td{border:1px solid #ddd;padding:6px;font-size:12px;vertical-align:top}
+    th{background:#f2f2f2}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .card{border:1px solid #ddd;padding:10px}
+    .warn{background:#fff3cd;border:1px solid #ffe69c;padding:8px;margin:12px 0;font-size:12px}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    textarea{width:100%;height:220px;font-family:monospace}
+    .pill{padding:2px 6px;border-radius:12px;font-size:11px}
+    .active{background:#d1e7dd}
+    .disabled{background:#f8d7da}
+  </style>
+</head>
+<body>
+  <h1>Painel Técnico (Read-only + Gestão de Policies Dev)</h1>
+  <p>Modo provisório de desenvolvimento. Sem login complexo. Sem ações remotas perigosas.</p>
+  <div class="warn">
+    <b>AVISO:</b> Policies nesta tela são <b>provisórias de desenvolvimento</b>.
+    O agente pode entrar em <b>fallback local</b> se não conseguir obter policy central.
+    Precedência aplicada: <b>tenant → grupo → dispositivo</b>.
+  </div>
+
+  <div class="grid" id="overview"></div>
+
+  <h2>Dispositivos</h2>
+  <table id="devices"><thead><tr><th>Hostname</th><th>Status</th><th>Tenant</th><th>Grupo</th><th>Agente</th><th>Último contato</th></tr></thead><tbody></tbody></table>
+
+  <h2>Alertas Ativos</h2>
+  <table id="alerts"><thead><tr><th>Severidade</th><th>Agente</th><th>Timestamp</th><th>Causa</th></tr></thead><tbody></tbody></table>
+
+  <h2>Autoações Recentes</h2>
+  <table id="audits"><thead><tr><th>Agente</th><th>Ação</th><th>Status</th><th>Recebido em</th></tr></thead><tbody></tbody></table>
+
+  <h2>Recomendações Técnicas</h2>
+  <table id="recs"><thead><tr><th>Tipo</th><th>Resumo</th><th>Severidade</th><th>Confiança</th><th>Evidências</th></tr></thead><tbody></tbody></table>
+
+  <h2>Recomendações por Tenant</h2>
+  <table id="tenantRecs"><thead><tr><th>Tipo</th><th>Resumo</th><th>Severidade</th></tr></thead><tbody></tbody></table>
+
+  <h2>Detalhe do Dispositivo</h2>
+  <select id="deviceSelect"></select>
+  <pre id="deviceDetail"></pre>
+
+  <h2>Gestão de Policies (Dev)</h2>
+  <div class="row">
+    <label>Tenant: <input id="fTenant" placeholder="tenant_id"></label>
+    <label>Group: <input id="fGroup" placeholder="group_id"></label>
+    <label>Device: <input id="fDevice" placeholder="device_id"></label>
+    <label>Status:
+      <select id="fStatus">
+        <option value="">todos</option>
+        <option value="active">ativa</option>
+        <option value="disabled">desativada</option>
+      </select>
+    </label>
+    <button id="btnFilterPolicies">Filtrar</button>
+  </div>
+  <table id="policies">
+    <thead>
+      <tr><th>Policy</th><th>Status</th><th>Version</th><th>Updated</th><th>Escopo</th><th>Ações</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <h3>Criar / Editar Policy</h3>
+  <div class="row">
+    <input id="policyIdInput" placeholder="policy_id (vazio para criar)">
+    <button id="btnLoadPolicy">Carregar por ID</button>
+    <button id="btnNewPolicy">Novo template</button>
+  </div>
+  <textarea id="policyEditor"></textarea>
+  <div class="row">
+    <button id="btnCreatePolicy">Criar</button>
+    <button id="btnUpdatePolicy">Salvar edição</button>
+    <button id="btnDisablePolicy">Desativar</button>
+  </div>
+  <pre id="policyMsg"></pre>
+
+  <h3>Policy efetiva</h3>
+  <div class="row">
+    <input id="effectiveAgentId" placeholder="agent_id">
+    <input id="effectiveDeviceId" placeholder="device_id">
+    <button id="btnEffectiveAgent">Ver por agente</button>
+    <button id="btnEffectiveDevice">Ver por dispositivo</button>
+  </div>
+  <pre id="effectiveView"></pre>
+
+  <h3>Auditoria de Policies</h3>
+  <div class="row">
+    <input id="auditPolicyId" placeholder="policy_id (opcional)">
+    <button id="btnPolicyAudit">Consultar auditoria</button>
+  </div>
+  <pre id="policyAuditView"></pre>
+
+<script>
+const API = localStorage.getItem('api_base') || 'http://127.0.0.1:8080';
+async function j(path){
+  const r=await fetch(API+path);
+  const body = await r.json().catch(()=>({error:'invalid_json_response'}));
+  if(!r.ok) throw new Error(body.error || `http_${r.status}`);
+  return body;
+}
+async function req(method, path, payload){
+  const r = await fetch(API+path, {
+    method,
+    headers: {'Content-Type':'application/json', 'X-Dev-Actor':'web-console'},
+    body: payload ? JSON.stringify(payload) : undefined
+  });
+  const body = await r.json().catch(()=>({error:'invalid_json_response'}));
+  if(!r.ok) throw new Error(body.error || `http_${r.status}`);
+  return body;
+}
+function ts(v){ return v ? new Date(v*1000).toISOString() : ''; }
+function setMsg(id, msg){ document.getElementById(id).textContent = msg; }
+function fmt(o){ return JSON.stringify(o,null,2); }
+function validatePolicyJson(raw){
+  const data = JSON.parse(raw);
+  const required = ['version','scope','thresholds','actions','signature'];
+  const missing = required.filter(k=>!(k in data));
+  if(missing.length) throw new Error('Campos obrigatórios ausentes: '+missing.join(', '));
+  if(!data.scope?.tenant_id) throw new Error('scope.tenant_id é obrigatório');
+  return data;
+}
+function templatePolicy(){
+  return {
+    version: 'dev-v1',
+    scope: {tenant_id: '', group_id: '', device_id: ''},
+    thresholds: {cpu_percent: 85, ram_percent: 85, disk_percent: 90, temperature_c: 85},
+    actions: {
+      enabled: true,
+      safe_mode: true,
+      allowed_actions: ['throttle_top_cpu_process','thermal_protect','restart_process'],
+      require_approval_actions: [],
+      rate_limit: {max_actions_per_hour: 30},
+      cooldown_seconds: 60,
+      restart_allowlist: ['notepad.exe']
+    },
+    transport: {retry: {base_seconds: 1, max_seconds: 20, jitter_ratio: 0.2}},
+    policy_fetch_interval_seconds: 30,
+    signature: {algorithm: 'RS256', value: 'dev-signature'}
+  };
+}
+
+async function load(){
+  const ov = await j('/v1/overview');
+  document.getElementById('overview').innerHTML =
+    `<div class='card'><b>Tenants</b><div>${ov.totals.tenants}</div></div>
+     <div class='card'><b>Devices</b><div>${ov.totals.devices}</div></div>
+     <div class='card'><b>Agents online</b><div>${ov.agents_status.online}</div></div>
+     <div class='card'><b>Ações recentes</b><div>${ov.recent_auto_actions}</div></div>`;
+
+  const devices = await j('/v1/devices?page=1&page_size=50');
+  const tbody = document.querySelector('#devices tbody'); tbody.innerHTML='';
+  const sel = document.getElementById('deviceSelect'); sel.innerHTML='';
+  devices.items.forEach(d=>{
+    tbody.innerHTML += `<tr><td>${d.hostname||''}</td><td>${d.status}</td><td>${d.tenant_id}</td><td>${d.group_id||''}</td><td>${d.agent_version||''}</td><td>${d.last_seen||''}</td></tr>`;
+    sel.innerHTML += `<option value='${d.device_id}'>${d.hostname} (${d.device_id})</option>`;
+  });
+
+  const alerts = await j('/v1/alerts/active');
+  const atb = document.querySelector('#alerts tbody'); atb.innerHTML='';
+  alerts.items.forEach(a=> atb.innerHTML += `<tr><td>${a.severity}</td><td>${a.agent_id}</td><td>${a.timestamp}</td><td>${a.cause||''}</td></tr>`);
+
+  const audits = await j('/v1/audit/actions');
+  const aub = document.querySelector('#audits tbody'); aub.innerHTML='';
+  audits.items.slice(0,20).forEach(x=> aub.innerHTML += `<tr><td>${x.agent_id}</td><td>${x.payload.action_name||''}</td><td>${x.payload.execution_status||''}</td><td>${x.received_at}</td></tr>`);
+
+  const recs = await j('/v1/recommendations');
+  const rtb = document.querySelector('#recs tbody'); rtb.innerHTML='';
+  recs.items.forEach(r=> rtb.innerHTML += `<tr><td>${r.type}</td><td>${r.summary}</td><td>${r.severity}</td><td>${r.confidence}</td><td>${(r.evidences||[]).join('; ')}</td></tr>`);
+
+  if (devices.items.length){
+    const tenantId = devices.items[0].tenant_id;
+    const trecs = await j('/v1/recommendations/tenants/'+tenantId);
+    const ttb = document.querySelector('#tenantRecs tbody'); ttb.innerHTML='';
+    trecs.items.forEach(r=> ttb.innerHTML += `<tr><td>${r.type}</td><td>${r.summary}</td><td>${r.severity}</td></tr>`);
+    await loadDevice(devices.items[0].device_id);
+    document.getElementById('effectiveAgentId').value = devices.items[0].agent_id || '';
+    document.getElementById('effectiveDeviceId').value = devices.items[0].device_id || '';
+    document.getElementById('fTenant').value = tenantId;
+  }
+  await loadPolicies();
+  document.getElementById('policyEditor').value = fmt(templatePolicy());
+}
+
+async function loadDevice(id){
+  const d = await j('/v1/devices/'+id);
+  document.getElementById('deviceDetail').textContent = JSON.stringify(d,null,2);
+}
+
+document.getElementById('deviceSelect').addEventListener('change', e=>loadDevice(e.target.value));
+
+async function loadPolicies(){
+  const q = new URLSearchParams();
+  ['Tenant','Group','Device','Status'].forEach(k=>{
+    const val = document.getElementById('f'+k).value.trim();
+    if(!val) return;
+    q.set(k.toLowerCase()==='status'?'status':`${k.toLowerCase()}_id`, val);
+  });
+  const data = await j('/v1/policies'+(q.toString()?`?${q.toString()}`:''));
+  const tbody = document.querySelector('#policies tbody');
+  tbody.innerHTML = '';
+  data.items.forEach(p=>{
+    const stClass = p.status === 'active' ? 'active' : 'disabled';
+    tbody.innerHTML += `<tr>
+      <td>${p.policy_id}</td>
+      <td><span class="pill ${stClass}">${p.status}</span></td>
+      <td>${p.version_no} (${p.version||''})</td>
+      <td>${ts(p.updated_at)}</td>
+      <td><code>${JSON.stringify(p.scope)}</code></td>
+      <td>
+        <button onclick="openPolicy('${p.policy_id}')">detalhe</button>
+        <button onclick="disablePolicy('${p.policy_id}')">desativar</button>
+      </td>
+    </tr>`;
+  });
+}
+
+async function openPolicy(policyId){
+  try{
+    const data = await j('/v1/policies/'+policyId);
+    document.getElementById('policyIdInput').value = policyId;
+    const clean = Object.assign({}, data);
+    delete clean.meta;
+    document.getElementById('policyEditor').value = fmt(clean);
+    setMsg('policyMsg', `Policy ${policyId} carregada.`);
+  }catch(e){ setMsg('policyMsg', 'Erro ao carregar policy: '+e.message); }
+}
+
+async function disablePolicy(policyId){
+  if(!confirm(`Desativar policy ${policyId}?`)) return;
+  try{
+    await req('POST', `/v1/policies/${policyId}/disable`);
+    setMsg('policyMsg', `Policy ${policyId} desativada.`);
+    await loadPolicies();
+  }catch(e){ setMsg('policyMsg', 'Erro ao desativar: '+e.message); }
+}
+
+document.getElementById('btnFilterPolicies').addEventListener('click', ()=>loadPolicies().catch(e=>setMsg('policyMsg', e.message)));
+document.getElementById('btnLoadPolicy').addEventListener('click', ()=>{
+  const id = document.getElementById('policyIdInput').value.trim();
+  if(!id) return setMsg('policyMsg', 'Informe policy_id.');
+  openPolicy(id);
+});
+document.getElementById('btnNewPolicy').addEventListener('click', ()=>{
+  document.getElementById('policyIdInput').value = '';
+  document.getElementById('policyEditor').value = fmt(templatePolicy());
+  setMsg('policyMsg','Template carregado.');
+});
+document.getElementById('btnCreatePolicy').addEventListener('click', async ()=>{
+  try{
+    const payload = validatePolicyJson(document.getElementById('policyEditor').value);
+    const out = await req('POST', '/v1/policies', payload);
+    document.getElementById('policyIdInput').value = out.policy_id;
+    setMsg('policyMsg', `Criada ${out.policy_id} (${out.version}).`);
+    await loadPolicies();
+  }catch(e){ setMsg('policyMsg', 'Falha ao criar policy: '+e.message); }
+});
+document.getElementById('btnUpdatePolicy').addEventListener('click', async ()=>{
+  const id = document.getElementById('policyIdInput').value.trim();
+  if(!id) return setMsg('policyMsg', 'Informe policy_id para editar.');
+  try{
+    const payload = validatePolicyJson(document.getElementById('policyEditor').value);
+    await req('PUT', `/v1/policies/${id}`, payload);
+    setMsg('policyMsg', `Policy ${id} atualizada.`);
+    await loadPolicies();
+    await openPolicy(id);
+  }catch(e){ setMsg('policyMsg', 'Falha ao editar policy: '+e.message); }
+});
+document.getElementById('btnDisablePolicy').addEventListener('click', ()=>{
+  const id = document.getElementById('policyIdInput').value.trim();
+  if(!id) return setMsg('policyMsg', 'Informe policy_id para desativar.');
+  disablePolicy(id);
+});
+document.getElementById('btnEffectiveAgent').addEventListener('click', async ()=>{
+  const id = document.getElementById('effectiveAgentId').value.trim();
+  if(!id) return setMsg('effectiveView', 'Informe agent_id.');
+  try{ setMsg('effectiveView', fmt(await j('/v1/policies/effective/'+id))); }
+  catch(e){ setMsg('effectiveView', 'Erro: '+e.message); }
+});
+document.getElementById('btnEffectiveDevice').addEventListener('click', async ()=>{
+  const id = document.getElementById('effectiveDeviceId').value.trim();
+  if(!id) return setMsg('effectiveView', 'Informe device_id.');
+  try{ setMsg('effectiveView', fmt(await j('/v1/policies/effective/device/'+id))); }
+  catch(e){ setMsg('effectiveView', 'Erro: '+e.message); }
+});
+document.getElementById('btnPolicyAudit').addEventListener('click', async ()=>{
+  const id = document.getElementById('auditPolicyId').value.trim();
+  try{
+    const q = id ? '?policy_id='+encodeURIComponent(id) : '';
+    setMsg('policyAuditView', fmt(await j('/v1/policies/audit'+q)));
+  }catch(e){ setMsg('policyAuditView', 'Erro: '+e.message); }
+});
+
+load();
+</script>
+</body>
+</html>

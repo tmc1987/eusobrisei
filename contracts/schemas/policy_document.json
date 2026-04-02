@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "policy_document.json",
+  "title": "PolicyDocument",
+  "type": "object",
+  "required": ["policy_id", "version", "scope", "thresholds", "actions", "signature"],
+  "properties": {
+    "policy_id": { "type": "string", "format": "uuid" },
+    "version": { "type": "string", "maxLength": 64 },
+    "scope": {
+      "type": "object",
+      "required": ["tenant_id"],
+      "properties": {
+        "tenant_id": { "type": "string", "format": "uuid" },
+        "group_id": { "type": "string", "format": "uuid" },
+        "device_id": { "type": "string", "format": "uuid" }
+      },
+      "additionalProperties": false
+    },
+    "thresholds": {
+      "type": "object",
+      "required": ["cpu_percent", "ram_percent", "disk_percent", "temperature_c"],
+      "properties": {
+        "cpu_percent": { "type": "number", "minimum": 0, "maximum": 100 },
+        "ram_percent": { "type": "number", "minimum": 0, "maximum": 100 },
+        "disk_percent": { "type": "number", "minimum": 0, "maximum": 100 },
+        "temperature_c": { "type": "number", "minimum": 0, "maximum": 130 }
+      },
+      "additionalProperties": true
+    },
+    "actions": {
+      "type": "object",
+      "required": ["enabled", "safe_mode", "allowed_actions", "require_approval_actions"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "safe_mode": { "type": "boolean" },
+        "allowed_actions": { "type": "array", "items": { "type": "string" } },
+        "require_approval_actions": { "type": "array", "items": { "type": "string" } },
+        "rate_limit": {
+          "type": "object",
+          "properties": {
+            "max_actions_per_hour": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "signature": {
+      "type": "object",
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": { "type": "string", "enum": ["RS256"] },
+        "value": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
