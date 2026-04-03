@@ -19,6 +19,7 @@ class Collector:
     def __init__(self) -> None:
         self._last_call_ts = time.time()
         self._cpu_count = psutil.cpu_count(logical=True) if psutil else 1
+        self._total_memory_bytes = psutil.virtual_memory().total if psutil else 1
         if psutil:
             psutil.cpu_percent(interval=None)
 
@@ -43,16 +44,30 @@ class Collector:
         return data
 
     def _get_processes(self) -> List[ProcessSample]:
-        samples: List[ProcessSample] = []
-        for proc in psutil.process_iter(["pid", "name", "cpu_percent", "memory_percent", "status", "create_time"]):
+        # Amostra em duas etapas para melhorar aderência ao Gerenciador de Tarefas:
+        # 1) "priming" do cpu_percent por processo
+        # 2) leitura após curto intervalo para obter taxa real da janela.
+        raw_procs = []
+        for proc in psutil.process_iter(["pid", "name", "status", "create_time"]):
             try:
-                info = proc.info
+                proc.cpu_percent(interval=None)
+                raw_procs.append(proc)
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        time.sleep(0.1)
+
+        samples: List[ProcessSample] = []
+        for proc in raw_procs:
+            try:
+                info = proc.as_dict(attrs=["pid", "name", "status", "create_time"])
+                cpu = self._normalize_process_cpu(proc.cpu_percent(interval=None))
+                mem = self._memory_percent(proc)
                 samples.append(
                     ProcessSample(
                         pid=info["pid"],
                         name=info.get("name") or "unknown",
-                        cpu_percent=self._normalize_process_cpu(info.get("cpu_percent") or 0.0),
-                        memory_percent=info.get("memory_percent") or 0.0,
+                        cpu_percent=cpu,
+                        memory_percent=mem,
                         status=info.get("status") or "unknown",
                         create_time=info.get("create_time") or 0.0,
                         io_read_bytes=float((proc.io_counters().read_bytes if proc.io_counters() else 0.0)),
@@ -72,6 +87,14 @@ class Collector:
         cpu_count = max(int(self._cpu_count or 1), 1)
         normalized = float(value) / cpu_count
         return max(0.0, min(100.0, normalized))
+
+    def _memory_percent(self, proc) -> float:
+        try:
+            rss = float(proc.memory_info().rss)
+            total = max(float(self._total_memory_bytes or 1), 1.0)
+            return max(0.0, min(100.0, (rss / total) * 100.0))
+        except (psutil.NoSuchProcess, psutil.AccessDenied, AttributeError):
+            return 0.0
 
     def _get_temperature(self) -> Optional[float]:
         try:
