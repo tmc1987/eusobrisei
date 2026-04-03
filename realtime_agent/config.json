@@ -32,7 +32,8 @@
     "ram_percent": 85,
     "disk_percent": 90,
     "temperature_c": 85,
-    "hung_process_seconds": 60
+    "hung_process_seconds": 60,
+    "hung_emit_interval_seconds": 60
   },
   "actions": {
     "enabled": true,

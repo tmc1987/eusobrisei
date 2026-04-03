@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from agent.analyzer import Analyzer
 from agent.models import ProcessSample
@@ -71,6 +72,24 @@ class AnalyzerTests(unittest.TestCase):
         disk = [a for a in alerts if a.code == "HIGH_DISK"][0]
         self.assertIn("top_disk_processes", disk.context)
         self.assertEqual(disk.context["top_disk_processes"][0]["name"], "backup.exe")
+
+    def test_hung_process_alert_is_throttled_to_avoid_infinite_loop_noise(self):
+        analyzer = Analyzer({"cpu_percent": 95, "ram_percent": 95, "disk_percent": 95, "temperature_c": 120, "hung_emit_interval_seconds": 60})
+        snapshot = {
+            "cpu_percent": 10,
+            "ram_percent": 20,
+            "disk_percent": 10,
+            "temperature_c": 30,
+            "hung_processes": [2604],
+            "processes": [ProcessSample(2604, "SystemSettings.exe", 0.5, 1.0, "running", 0.0)],
+        }
+        with patch("agent.analyzer.time.time", side_effect=[100.0, 110.0, 170.0]):
+            first = analyzer.analyze(snapshot)
+            second = analyzer.analyze(snapshot)
+            third = analyzer.analyze(snapshot)
+        self.assertEqual(len([a for a in first if a.code == "HUNG_PROCESS"]), 1)
+        self.assertEqual(len([a for a in second if a.code == "HUNG_PROCESS"]), 0)
+        self.assertEqual(len([a for a in third if a.code == "HUNG_PROCESS"]), 1)
 
 
 if __name__ == "__main__":

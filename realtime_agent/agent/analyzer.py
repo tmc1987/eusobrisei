@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
+import time
 from typing import Deque, Dict, List, Optional
 
 from .models import Alert, ProcessSample
@@ -12,6 +13,8 @@ class Analyzer:
         self._ram_history: Deque[float] = deque(maxlen=12)
         self._cpu_history: Deque[float] = deque(maxlen=12)
         self._disk_history: Deque[float] = deque(maxlen=12)
+        self._hung_tracker: Dict[int, Dict[str, float]] = {}
+        self._hung_emit_interval_seconds = int(thresholds.get("hung_emit_interval_seconds", 60))
 
     def analyze(self, snapshot: Dict) -> List[Alert]:
         alerts: List[Alert] = []
@@ -119,19 +122,40 @@ class Analyzer:
 
     def _analyze_hung_processes(self, processes: List[ProcessSample], hung_pids: List[int]) -> List[Alert]:
         if not hung_pids:
+            self._hung_tracker.clear()
             return []
 
         by_pid = {p.pid: p for p in processes}
         alerts: List[Alert] = []
+        now = time.time()
+        current = set(hung_pids)
+        for known in list(self._hung_tracker.keys()):
+            if known not in current:
+                self._hung_tracker.pop(known, None)
+
         for pid in hung_pids:
             proc: Optional[ProcessSample] = by_pid.get(pid)
             name = proc.name if proc else "unknown"
+            state = self._hung_tracker.get(pid)
+            if not state:
+                state = {"first_seen": now, "last_emitted": 0.0, "count": 0.0}
+                self._hung_tracker[pid] = state
+            state["count"] += 1
+            should_emit = (now - state["last_emitted"]) >= self._hung_emit_interval_seconds
+            if not should_emit:
+                continue
+            state["last_emitted"] = now
             alerts.append(
                 Alert(
                     "HUNG_PROCESS",
                     "high",
                     f"Processo travado detectado: {name} (PID {pid})",
-                    {"pid": pid, "name": name},
+                    {
+                        "pid": pid,
+                        "name": name,
+                        "recurrence_count": int(state["count"]),
+                        "hung_for_seconds": round(now - state["first_seen"], 1),
+                    },
                 )
             )
         return alerts
