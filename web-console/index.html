@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Painel Técnico (Read-only + Gestão de Policies Dev)</title>
+  <style>
+    :root{
+      --bg:#000000;
+      --bg-soft:#071025;
+      --panel:#0b1731;
+      --panel-2:#0f1f44;
+      --line:#1f4ea8;
+      --text:#89b8ff;
+      --text-strong:#cfe3ff;
+      --muted:#5f86c9;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(circle at top,#05102a 0,var(--bg) 55%);color:var(--text);font-family:"Inter","Segoe UI",Arial,sans-serif}
+    .wrap{max-width:1240px;margin:24px auto;padding:0 16px}
+    h1{margin:0 0 6px;color:var(--text-strong);font-size:40px;font-weight:800}
+    .sub{margin:0 0 12px;color:var(--muted)}
+    .warn{margin:0 0 16px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(15,31,68,.6);color:var(--text-strong)}
+
+    .stats{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+    .card{padding:12px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(170deg,var(--panel-2),var(--panel));}
+    .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+    .kpi{font-size:30px;font-weight:800;color:var(--text-strong);margin-top:6px}
+
+    section{border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,var(--panel),#070f22);padding:14px;margin-bottom:14px}
+    h2{margin:0 0 10px;color:var(--text-strong)}
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid rgba(31,78,168,.35);padding:10px;font-size:13px;text-align:left;vertical-align:top}
+    th{background:rgba(8,20,46,.9);color:var(--text-strong)}
+    .pill{display:inline-block;padding:2px 8px;border:1px solid var(--line);border-radius:999px;font-size:11px;color:var(--text-strong)}
+    .empty{color:var(--muted);padding:12px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Painel Técnico (Read-only + Gestão de Policies Dev)</h1>
+  <p class="sub">Modo provisório de desenvolvimento. Sem login complexo. Sem ações remotas perigosas.</p>
+  <p class="warn"><b>AVISO:</b> Policies nesta tela são provisórias de desenvolvimento. O agente pode entrar em fallback local se não conseguir obter policy central. Precedência aplicada: tenant → grupo → dispositivo.</p>
+
+  <div class="stats" id="stats"></div>
+
+  <section>
+    <h2>Problemas Detectados (agrupados)</h2>
+    <table id="alerts">
+      <thead>
+        <tr><th>Prioridade</th><th>Equipamento</th><th>O que aconteceu</th><th>Ocorrências</th><th>Primeiro registro</th><th>Último registro</th><th>Auto-resolução padrão</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Autoações Executadas</h2>
+    <table id="audits">
+      <thead>
+        <tr><th>Equipamento</th><th>Auto-resolução aplicada</th><th>Situação final</th><th>Efeito prático</th><th>Confiança</th><th>Próximo passo automático</th><th>Registrado em</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</div>
+
+<script>
+const API = localStorage.getItem('api_base') || 'http://127.0.0.1:8080';
+const safeDate = v => v ? (isNaN(new Date(v).getTime()) ? String(v) : new Date(v).toLocaleString('pt-BR')) : '—';
+const safeEpoch = v => v ? new Date(v * 1000).toLocaleString('pt-BR') : '—';
+const severityText = sev => ({S4:'Crítica',S3:'Alta',S2:'Média',S1:'Baixa'})[sev] || 'Média';
+const statusText = st => ({success:'Concluída',partial:'Parcial',failed:'Falhou'})[st] || st || 'Não informado';
+const actionText = name => ({
+  thermal_protect: 'Redução automática de aquecimento',
+  throttle_top_cpu_process: 'Redução automática de carga do processo',
+  restart_process: 'Reinício automático controlado do processo'
+}[name] || `Auto-resolução técnica: ${name || 'não informada'}`);
+const simpleProblem = cause => {
+  const c = String(cause || '').toLowerCase();
+  if (c.includes('cpu')) return 'Uso de processamento acima do ideal';
+  if (c.includes('ram')) return 'Consumo de memória acima do ideal';
+  if (c.includes('disco')) return 'Uso de disco acima do ideal';
+  if (c.includes('travado')) return 'Aplicativo travado e sem resposta';
+  return cause || 'Problema operacional detectado';
+};
+const recommendedAction = (cause, count) => {
+  const c = String(cause || '').toLowerCase();
+  if (c.includes('travado')) return count >= 3 ? 'Reinício automático + isolamento de reincidência' : 'Reinício automático do aplicativo';
+  if (c.includes('cpu')) return count >= 3 ? 'Redução automática + escalonamento de capacidade' : 'Redução automática da carga do processo dominante';
+  if (c.includes('ram')) return count >= 3 ? 'Redução automática + ajuste estrutural de memória' : 'Redução automática do consumo do processo dominante';
+  if (c.includes('disco')) return count >= 3 ? 'Redução automática + correção estrutural de armazenamento' : 'Redução automática do uso de disco do processo dominante';
+  return 'Auto-mitigação imediata e correção progressiva';
+};
+const effectivenessText = (status, confidence) => {
+  if (status === 'success') return 'Problema estabilizado automaticamente';
+  if (status === 'partial') return confidence >= 0.7 ? 'Mitigado com sucesso parcial' : 'Mitigado parcialmente';
+  return 'Falha na auto-resolução';
+};
+const nextStep = status => status === 'success' ? 'Manter proteção automática ativa' : 'Executar próxima auto-resolução disponível + escalar';
+
+async function getJson(path){
+  const r = await fetch(API + path);
+  const txt = await r.text();
+  const body = txt ? (()=>{try{return JSON.parse(txt);}catch{return {raw:txt};}})() : {};
+  if(!r.ok) throw new Error(body.error || body.message || body.raw || `HTTP ${r.status}`);
+  return body;
+}
+
+function renderStats({tenants=0, devices=0, online=0, actions=0}){
+  document.getElementById('stats').innerHTML = `
+    <div class='card'><div class='label'>Clientes atendidos</div><div class='kpi'>${tenants}</div></div>
+    <div class='card'><div class='label'>Equipamentos monitorados</div><div class='kpi'>${devices}</div></div>
+    <div class='card'><div class='label'>Agentes online agora</div><div class='kpi'>${online}</div></div>
+    <div class='card'><div class='label'>Autoações realizadas</div><div class='kpi'>${actions}</div></div>`;
+}
+
+function renderAlerts(items, byAgent){
+  const tbody = document.querySelector('#alerts tbody');
+  tbody.innerHTML = '';
+  const grouped = {};
+  items.forEach(a=>{
+    const key = `${a.agent_id}|${a.severity}|${a.cause}`;
+    const ts = a.ts || a.timestamp || a.created_at;
+    if(!grouped[key]) grouped[key] = { ...a, count:0, first:ts, last:ts };
+    grouped[key].count += 1;
+    grouped[key].first = grouped[key].first && ts && grouped[key].first < ts ? grouped[key].first : ts;
+    grouped[key].last = grouped[key].last && ts && grouped[key].last > ts ? grouped[key].last : ts;
+  });
+  const rows = Object.values(grouped).sort((a,b)=>b.count-a.count);
+  if(!rows.length){ tbody.innerHTML = `<tr><td colspan='7' class='empty'>Sem problemas ativos no momento.</td></tr>`; return; }
+  rows.slice(0,80).forEach(a=>{
+    tbody.innerHTML += `<tr>
+      <td><span class='pill'>${severityText(a.severity || 'S3')}</span></td>
+      <td>${byAgent[a.agent_id] || a.agent_id || 'Equipamento não identificado'}</td>
+      <td>${simpleProblem(a.cause)}</td>
+      <td>${a.count}</td>
+      <td>${safeDate(a.first)}</td>
+      <td>${safeDate(a.last)}</td>
+      <td>${recommendedAction(a.cause, a.count)}</td>
+    </tr>`;
+  });
+}
+
+function renderAudits(items, byAgent){
+  const tbody = document.querySelector('#audits tbody');
+  tbody.innerHTML = '';
+  if(!items.length){ tbody.innerHTML = `<tr><td colspan='7' class='empty'>Sem autoações recentes.</td></tr>`; return; }
+  items.slice(0,40).forEach(x=>{
+    const ctx = x.payload?.post_state?.operational_context || {};
+    const confidence = Number(ctx.decision_confidence ?? 0);
+    const conf = ctx.decision_confidence != null ? `${Math.round(confidence * 100)}%` : 'n/a';
+    const status = x.payload?.execution_status || '';
+    tbody.innerHTML += `<tr>
+      <td>${byAgent[x.agent_id] || x.agent_id || 'Equipamento não identificado'}</td>
+      <td>${actionText(x.payload?.action_name)}</td>
+      <td>${statusText(status)}</td>
+      <td>${effectivenessText(status, confidence)}</td>
+      <td>${conf}</td>
+      <td>${nextStep(status)}</td>
+      <td>${safeEpoch(x.received_at)}</td>
+    </tr>`;
+  });
+}
+
+(async function init(){
+  try{
+    const [overview, devices, alerts, audits] = await Promise.all([
+      getJson('/v1/overview').catch(()=>({})),
+      getJson('/v1/devices?page=1&page_size=50').catch(()=>({items:[]})),
+      getJson('/v1/alerts/active').catch(()=>({items:[]})),
+      getJson('/v1/audit/actions').catch(()=>({items:[]})),
+    ]);
+    renderStats({
+      tenants: overview.tenants_count || new Set((devices.items||[]).map(d=>d.tenant_id)).size,
+      devices: (devices.items || []).length,
+      online: overview.agents_status?.online || 0,
+      actions: (audits.items || []).length,
+    });
+    const byAgent = {};
+    (devices.items || []).forEach(d => {
+      if (d.agent_id) byAgent[d.agent_id] = d.hostname || `Equipamento ${String(d.device_id || '').slice(0,8)}`;
+    });
+    renderAlerts(alerts.items || [], byAgent);
+    renderAudits(audits.items || [], byAgent);
+  }catch(err){
+    document.querySelector('#alerts tbody').innerHTML = `<tr><td colspan='7' class='empty'>Erro ao carregar painel: ${err.message}</td></tr>`;
+  }
+})();
+</script>
+</body>
+</html>
