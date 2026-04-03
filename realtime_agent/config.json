@@ -1,0 +1,66 @@
+{
+  "interval_seconds": 5,
+  "log_file": "logs/agent.log",
+  "identity": {
+    "tenant_id": "00000000-0000-0000-0000-000000000001",
+    "device_id": "00000000-0000-0000-0000-000000000002",
+    "agent_id": "00000000-0000-0000-0000-000000000003",
+    "agent_version": "0.1.0"
+  },
+  "bootstrap": {
+    "activation_token": "dev-bootstrap-token",
+    "identity_store_path": "data/identity.json",
+    "hostname": "dev-host",
+    "os_version": "Windows-dev"
+  },
+  "server": {
+    "enabled": true,
+    "url": "http://127.0.0.1:8080",
+    "token": "",
+    "timeout_seconds": 3,
+    "retry": {
+      "base_seconds": 1,
+      "max_seconds": 20,
+      "jitter_ratio": 0.2
+    }
+  },
+  "outbox": {
+    "db_path": "data/outbox.db"
+  },
+  "thresholds": {
+    "cpu_percent": 85,
+    "ram_percent": 85,
+    "disk_percent": 90,
+    "temperature_c": 85,
+    "hung_process_seconds": 60,
+    "hung_emit_interval_seconds": 60,
+    "hung_emit_backoff_factor": 2.0,
+    "hung_emit_max_interval_seconds": 300
+  },
+  "actions": {
+    "enabled": true,
+    "safe_mode": true,
+    "priority_rollback_seconds": 120,
+    "allowed_priority_adjustments": true,
+    "auto_restart_hung_process": false,
+    "auto_restart_on_recurrence": false
+  },
+  "processes": {
+    "critical_names": [
+      "explorer.exe",
+      "svchost.exe"
+    ],
+    "non_throttle_names": [
+      "SystemSettings.exe"
+    ],
+    "restart_commands": {
+      "notepad.exe": "start notepad.exe"
+    },
+    "restart_allowlist": [
+      "notepad.exe"
+    ]
+  },
+  "policy": {
+    "fetch_interval_seconds": 30
+  }
+}
