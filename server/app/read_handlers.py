@@ -82,13 +82,22 @@ def overview(_: bytes, __: Dict[str, str], ___: Dict[str, str]) -> Tuple[int, Di
         recent_actions = db.execute("SELECT COUNT(*) FROM action_audit WHERE received_at>?", (time.time() - 3600,)).fetchone()[0]
         action_rows = db.execute("SELECT payload FROM action_audit WHERE received_at>?", (time.time() - 3600,)).fetchall()
         outcomes = {"resolved": 0, "mitigated": 0, "failed": 0}
+        failure_categories = {}
         for (p,) in action_rows:
             payload = json.loads(p)
             outcome = (payload.get("post_state") or {}).get("outcome")
+            ctx = (payload.get("post_state") or {}).get("operational_context") or {}
+            evidence = (payload.get("post_state") or {}).get("evidence") or {}
+            err_cat = ctx.get("error_category") or evidence.get("error_category")
+            if err_cat:
+                failure_categories[err_cat] = failure_categories.get(err_cat, 0) + 1
             if outcome in outcomes:
                 outcomes[outcome] += 1
             elif payload.get("execution_status") == "failed":
                 outcomes["failed"] += 1
+        total_outcomes = sum(outcomes.values())
+        effective = outcomes["resolved"] + outcomes["mitigated"]
+        efficiency_rate = round((effective / total_outcomes) * 100, 2) if total_outcomes else 100.0
 
     return HTTPStatus.OK, {
         "totals": {
@@ -101,6 +110,12 @@ def overview(_: bytes, __: Dict[str, str], ___: Dict[str, str]) -> Tuple[int, Di
         "active_alerts_by_severity": severities,
         "recent_auto_actions": recent_actions,
         "action_outcomes": outcomes,
+        "remediation_efficiency": {
+            "effective_actions": effective,
+            "total_actions": total_outcomes,
+            "efficiency_rate_percent": efficiency_rate,
+            "top_failure_categories": sorted([{"category": k, "count": v} for k, v in failure_categories.items()], key=lambda x: x["count"], reverse=True)[:5],
+        },
         "top_probable_causes": sorted([{"cause": k, "count": v} for k, v in probable_causes.items()], key=lambda x: x["count"], reverse=True)[:5],
         "top_involved_processes": sorted([{"name": k, "count": v} for k, v in process_hits.items()], key=lambda x: x["count"], reverse=True)[:5],
         "classification_rules": {

@@ -194,12 +194,13 @@ async function getJson(path){
   return body;
 }
 
-function renderStats({tenants=0, devices=0, online=0, actions=0}){
+function renderStats({tenants=0, devices=0, online=0, actions=0, efficiency=100, topFailure='—'}){
   document.getElementById('stats').innerHTML = `
     <div class='card'><div class='label'>Clientes atendidos</div><div class='kpi'>${tenants}</div></div>
     <div class='card'><div class='label'>Equipamentos monitorados</div><div class='kpi'>${devices}</div></div>
     <div class='card'><div class='label'>Agentes online agora</div><div class='kpi'>${online}</div></div>
-    <div class='card'><div class='label'>Autoações realizadas</div><div class='kpi'>${actions}</div></div>`;
+    <div class='card'><div class='label'>Autoações realizadas</div><div class='kpi'>${actions}</div></div>
+    <div class='card'><div class='label'>Eficiência de tratamento</div><div class='kpi'>${efficiency}%</div><div class='hint'>Principal bloqueio: ${topFailure}</div></div>`;
 }
 
 function renderAlerts(items, byAgent){
@@ -266,6 +267,8 @@ async function refreshDashboard(){
       devices: (devices.items || []).length,
       online: overview.agents_status?.online || 0,
       actions: (audits.items || []).length,
+      efficiency: Number(overview.remediation_efficiency?.efficiency_rate_percent ?? 100).toFixed(1),
+      topFailure: categoryLabel(overview.remediation_efficiency?.top_failure_categories?.[0]?.category),
     });
     const byAgent = {};
     (devices.items || []).forEach(d => {

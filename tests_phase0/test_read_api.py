@@ -62,6 +62,7 @@ class ReadApiTests(unittest.TestCase):
         ov = json.loads(conn.getresponse().read().decode()); conn.close()
         self.assertIn("totals", ov)
         self.assertIn("agents_status", ov)
+        self.assertIn("remediation_efficiency", ov)
 
         conn2 = HTTPConnection("127.0.0.1", self.port, timeout=3)
         conn2.request("GET", "/v1/devices?page=1&page_size=10")
