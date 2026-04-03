@@ -117,7 +117,37 @@ const effectivenessText = (status, confidence) => {
   if (status === 'partial') return confidence >= 0.7 ? 'Mitigado com sucesso parcial' : 'Mitigado parcialmente';
   return 'Falha na auto-resolução';
 };
-const nextStep = status => status === 'success' ? 'Manter proteção automática ativa' : 'Executar próxima auto-resolução disponível + escalar';
+const nextStep = (status, payload) => {
+  const ctx = payload?.post_state?.operational_context || {};
+  const ev = payload?.post_state?.evidence || {};
+  const category = ctx.error_category || ev.error_category;
+  if (status === 'success') return 'Manter proteção automática ativa e monitorar recorrência.';
+  if (category === 'policy_blocked') return 'Revisar policy com responsável técnico e liberar ação segura.';
+  if (category === 'protected_process') return 'Evitar intervenção forçada; abrir correção do aplicativo relacionado.';
+  if (category === 'permission_denied') return 'Ajustar privilégios do agente e repetir diagnóstico.';
+  if (category === 'cooldown_active') return 'Aguardar fim do cooldown e revalidar indicadores.';
+  return 'Executar próxima auto-resolução disponível + escalar para especialista.';
+};
+const categoryLabel = c => ({
+  cooldown_active: 'Ação em pausa de segurança',
+  policy_blocked: 'Bloqueado por política de segurança',
+  protected_process: 'Processo protegido do sistema',
+  permission_denied: 'Permissão insuficiente no equipamento',
+  capability_not_available: 'Recurso não disponível neste agente',
+  no_eligible_target: 'Sem processo seguro para ajuste automático',
+  restart_failed: 'Tentativa de reinício não concluída',
+  execution_failed: 'Falha de execução da auto-resolução',
+}[c] || 'Motivo técnico não classificado');
+const categoryGuidance = c => ({
+  cooldown_active: 'Aguardar alguns segundos e reavaliar. O bloqueio evita repetição de ação em loop.',
+  policy_blocked: 'Ajustar allowlist/policy com aprovação técnica e nova janela de execução.',
+  protected_process: 'Não forçar ação nesse processo. Priorizar correção do aplicativo relacionado e coleta de evidências.',
+  permission_denied: 'Executar agente com privilégio adequado ou ajustar política local de permissões.',
+  capability_not_available: 'Habilitar dependência/recurso no agente antes de repetir a tentativa.',
+  no_eligible_target: 'Sem alvo seguro no momento. Aplicar mitigação conservadora e acompanhar recorrência.',
+  restart_failed: 'Validar comando de restart e saúde do aplicativo antes de nova tentativa.',
+  execution_failed: 'Coletar logs do agente e abrir investigação técnica com evidências.',
+}[c] || 'Coletar logs e validar configuração para próxima execução.');
 const topProcess = evt => {
   const p = (evt.top_processes || [])[0];
   if (!p) return 'Não identificado';
@@ -142,9 +172,10 @@ const clearFailureReason = payload => {
   const category = operational.error_category || evidence.error_category;
   const block = operational.block_reason || evidence.block_reason;
   const recommendation = post.human_recommendation || '';
-  const prefix = category ? `[${category}] ` : '';
-  const parts = [`${prefix}${msg}`];
+  const prefix = categoryLabel(category);
+  const parts = [`${prefix}: ${msg}`];
   if (block) parts.push(block);
+  if (category) parts.push(categoryGuidance(category));
   if (recommendation) parts.push(recommendation);
   return parts.join('. ');
 };
@@ -213,7 +244,7 @@ function renderAudits(items, byAgent){
       <td>${effectivenessText(status, confidence)}</td>
       <td>${conf}</td>
       <td>${clearFailureReason(x.payload)}</td>
-      <td>${nextStep(status)}</td>
+      <td>${nextStep(status, x.payload)}</td>
       <td>${safeEpoch(x.received_at)}</td>
     </tr>`;
   });
