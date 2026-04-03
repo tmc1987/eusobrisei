@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent_bootstrap_request.json",
+  "title": "AgentBootstrapRequest",
+  "type": "object",
+  "required": ["activation_token", "hostname", "os_version", "agent_version"],
+  "properties": {
+    "activation_token": { "type": "string", "minLength": 16, "maxLength": 256 },
+    "hostname": { "type": "string", "maxLength": 128 },
+    "os_version": { "type": "string", "maxLength": 128 },
+    "agent_version": { "type": "string", "maxLength": 32 },
+    "hardware_fingerprint": { "type": "string", "maxLength": 256 }
+  },
+  "additionalProperties": false
+}

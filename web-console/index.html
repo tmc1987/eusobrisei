@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Painel Técnico (Read-only + Gestão de Policies Dev)</title>
+  <style>
+    :root{
+      --bg:#000000;
+      --bg-soft:#071025;
+      --panel:#0b1731;
+      --panel-2:#0f1f44;
+      --line:#1f4ea8;
+      --text:#89b8ff;
+      --text-strong:#cfe3ff;
+      --muted:#5f86c9;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(circle at top,#05102a 0,var(--bg) 55%);color:var(--text);font-family:"Inter","Segoe UI",Arial,sans-serif}
+    .wrap{max-width:1240px;margin:24px auto;padding:0 16px}
+    h1{margin:0 0 6px;color:var(--text-strong);font-size:40px;font-weight:800}
+    .sub{margin:0 0 12px;color:var(--muted)}
+    .warn{margin:0 0 16px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(15,31,68,.6);color:var(--text-strong)}
+    .live{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(15,31,68,.45)}
+    .live .left{display:flex;gap:8px;align-items:center}
+    .dot{width:10px;height:10px;border-radius:999px;background:#2dd4bf;box-shadow:0 0 8px rgba(45,212,191,.7)}
+    .btn{border:1px solid var(--line);background:#0f1f44;color:var(--text-strong);padding:6px 10px;border-radius:8px;cursor:pointer}
+    .btn:hover{filter:brightness(1.1)}
+    .hint{font-size:12px;color:var(--muted)}
+
+    .stats{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+    .card{padding:12px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(170deg,var(--panel-2),var(--panel));}
+    .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+    .kpi{font-size:30px;font-weight:800;color:var(--text-strong);margin-top:6px}
+
+    section{border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,var(--panel),#070f22);padding:14px;margin-bottom:14px}
+    h2{margin:0 0 10px;color:var(--text-strong)}
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid rgba(31,78,168,.35);padding:10px;font-size:13px;text-align:left;vertical-align:top}
+    th{background:rgba(8,20,46,.9);color:var(--text-strong)}
+    .pill{display:inline-block;padding:2px 8px;border:1px solid var(--line);border-radius:999px;font-size:11px;color:var(--text-strong)}
+    .empty{color:var(--muted);padding:12px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Painel Técnico (Read-only + Gestão de Policies Dev)</h1>
+  <p class="sub">Modo provisório de desenvolvimento. Sem login complexo. Sem ações remotas perigosas.</p>
+  <p class="warn"><b>AVISO:</b> Policies nesta tela são provisórias de desenvolvimento. O agente pode entrar em fallback local se não conseguir obter policy central. Precedência aplicada: tenant → grupo → dispositivo.</p>
+  <div class="live">
+    <div class="left">
+      <span class="dot"></span>
+      <b id="liveStatus">Atualização em tempo real: ativa (10s)</b>
+      <span class="hint" id="lastUpdate">Aguardando primeira atualização…</span>
+    </div>
+    <button class="btn" id="toggleLive">Pausar atualização</button>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <section>
+    <h2>Problemas Detectados (agrupados)</h2>
+    <table id="alerts">
+      <thead>
+        <tr><th>Prioridade</th><th>Equipamento</th><th>O que aconteceu</th><th>Processo mais impactante</th><th>Ocorrências</th><th>Primeiro registro</th><th>Último registro</th><th>Auto-resolução padrão</th><th>Explicação clara ao cliente</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Autoações Executadas</h2>
+    <table id="audits">
+      <thead>
+        <tr><th>Equipamento</th><th>Incidente ativo</th><th>Tentativas / orçamento</th><th>Status do incidente</th><th>Auto-resolução aplicada</th><th>Situação final</th><th>Efeito prático</th><th>Confiança</th><th>Motivo técnico (claro)</th><th>Próximo passo automático</th><th>Registrado em</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</div>
+
+<script>
+const API = localStorage.getItem('api_base') || 'http://127.0.0.1:8080';
+const REFRESH_MS = 10000;
+let liveTimer = null;
+let liveEnabled = true;
+const safeDate = v => v ? (isNaN(new Date(v).getTime()) ? String(v) : new Date(v).toLocaleString('pt-BR')) : '—';
+const safeEpoch = v => v ? new Date(v * 1000).toLocaleString('pt-BR') : '—';
+const severityText = sev => ({S4:'Crítica',S3:'Alta',S2:'Média',S1:'Baixa'})[sev] || 'Média';
+const statusText = st => ({success:'Concluída',partial:'Parcial',failed:'Falhou'})[st] || st || 'Não informado';
+const incidentStateText = st => ({
+  open: 'Incidente ativo',
+  mitigating: 'Em mitigação',
+  stabilized: 'Estabilizado',
+  escalated: 'Escalado'
+})[st] || 'Não informado';
+const actionText = name => ({
+  thermal_protect: 'Redução automática de aquecimento',
+  throttle_top_cpu_process: 'Redução automática de carga do processo',
+  restart_process: 'Reinício automático controlado do processo'
+}[name] || `Auto-resolução técnica: ${name || 'não informada'}`);
+const simpleProblem = cause => {
+  const c = String(cause || '').toLowerCase();
+  if (c.includes('cpu')) return 'Uso de processamento acima do ideal';
+  if (c.includes('ram')) return 'Consumo de memória acima do ideal';
+  if (c.includes('disco')) return 'Uso de disco acima do ideal';
+  if (c.includes('travado')) return 'Aplicativo travado e sem resposta';
+  return cause || 'Problema operacional detectado';
+};
+const recommendedAction = (cause, count) => {
+  const c = String(cause || '').toLowerCase();
+  if (c.includes('travado')) return count >= 3 ? 'Reinício automático + isolamento de reincidência' : 'Reinício automático do aplicativo';
+  if (c.includes('cpu')) return count >= 3 ? 'Redução automática + escalonamento de capacidade' : 'Redução automática da carga do processo dominante';
+  if (c.includes('ram')) return count >= 3 ? 'Redução automática + ajuste estrutural de memória' : 'Redução automática do consumo do processo dominante';
+  if (c.includes('disco')) return count >= 3 ? 'Redução automática + correção estrutural de armazenamento' : 'Redução automática do uso de disco do processo dominante';
+  return 'Auto-mitigação imediata e correção progressiva';
+};
+const effectivenessText = (status, confidence) => {
+  if (status === 'success') return 'Problema estabilizado automaticamente';
+  if (status === 'partial') return confidence >= 0.7 ? 'Mitigado com sucesso parcial' : 'Mitigado parcialmente';
+  return 'Falha na auto-resolução';
+};
+const nextStep = (status, payload) => {
+  const ctx = payload?.post_state?.operational_context || {};
+  const ev = payload?.post_state?.evidence || {};
+  const category = ctx.error_category || ev.error_category;
+  if (status === 'success') return 'Manter proteção automática ativa e monitorar recorrência.';
+  if (category === 'policy_blocked') return 'Revisar policy com responsável técnico e liberar ação segura.';
+  if (category === 'protected_process') return 'Evitar intervenção forçada; abrir correção do aplicativo relacionado.';
+  if (category === 'permission_denied') return 'Ajustar privilégios do agente e repetir diagnóstico.';
+  if (category === 'cooldown_active') return 'Aguardar fim do cooldown e revalidar indicadores.';
+  if (category === 'suppressed_ineffective') return 'Escalar para especialista com evidências e trocar estratégia de remediação.';
+  return 'Executar próxima auto-resolução disponível + escalar para especialista.';
+};
+const categoryLabel = c => ({
+  cooldown_active: 'Ação em pausa de segurança',
+  policy_blocked: 'Bloqueado por política de segurança',
+  protected_process: 'Processo protegido do sistema',
+  permission_denied: 'Permissão insuficiente no equipamento',
+  capability_not_available: 'Recurso não disponível neste agente',
+  no_eligible_target: 'Sem processo seguro para ajuste automático',
+  restart_failed: 'Tentativa de reinício não concluída',
+  suppressed_ineffective: 'Ação pausada por baixa efetividade',
+  execution_failed: 'Falha de execução da auto-resolução',
+}[c] || 'Motivo técnico não classificado');
+const categoryGuidance = c => ({
+  cooldown_active: 'Aguardar alguns segundos e reavaliar. O bloqueio evita repetição de ação em loop.',
+  policy_blocked: 'Ajustar allowlist/policy com aprovação técnica e nova janela de execução.',
+  protected_process: 'Não forçar ação nesse processo. Priorizar correção do aplicativo relacionado e coleta de evidências.',
+  permission_denied: 'Executar agente com privilégio adequado ou ajustar política local de permissões.',
+  capability_not_available: 'Habilitar dependência/recurso no agente antes de repetir a tentativa.',
+  no_eligible_target: 'Sem alvo seguro no momento. Aplicar mitigação conservadora e acompanhar recorrência.',
+  restart_failed: 'Validar comando de restart e saúde do aplicativo antes de nova tentativa.',
+  suppressed_ineffective: 'Evitar repetir a mesma ação. Escalar com evidências e revisar estratégia de remediação.',
+  execution_failed: 'Coletar logs do agente e abrir investigação técnica com evidências.',
+}[c] || 'Coletar logs e validar configuração para próxima execução.');
+const topProcess = evt => {
+  const p = (evt.top_processes || [])[0];
+  if (!p) return 'Não identificado';
+  const cpu = p.cpu_percent != null ? `CPU ${Math.round(p.cpu_percent)}%` : null;
+  const mem = p.memory_percent != null ? `RAM ${Math.round(p.memory_percent)}%` : null;
+  return `${p.name || 'Processo'}${cpu || mem ? ` (${[cpu, mem].filter(Boolean).join(' | ')})` : ''}`;
+};
+const clientExplanation = evt => {
+  const c = String(evt.cause || '').toLowerCase();
+  const proc = (evt.top_processes || [])[0]?.name;
+  if (c.includes('travado')) return `O aplicativo ${proc || 'alvo'} parou de responder e o sistema tentou estabilizar sem risco.`;
+  if (c.includes('memória') || c.includes('ram')) return `Há consumo de memória acima do ideal${proc ? ` com maior peso em ${proc}` : ''}.`;
+  if (c.includes('cpu')) return `Há consumo de processamento acima do ideal${proc ? ` concentrado em ${proc}` : ''}.`;
+  if (c.includes('disco')) return `Há uso de disco acima do ideal${proc ? ` puxado por ${proc}` : ''}.`;
+  return 'O sistema detectou degradação e aplicou contenção automática segura.';
+};
+const clearFailureReason = payload => {
+  const post = payload?.post_state || {};
+  const msg = payload?.error_message || post.message || 'Sem detalhe técnico disponível';
+  const operational = post.operational_context || {};
+  const evidence = post.evidence || {};
+  const category = operational.error_category || evidence.error_category;
+  const block = operational.block_reason || evidence.block_reason;
+  const recommendation = post.human_recommendation || '';
+  const prefix = categoryLabel(category);
+  const parts = [`${prefix}: ${msg}`];
+  if (block) parts.push(block);
+  if (category) parts.push(categoryGuidance(category));
+  if (recommendation) parts.push(recommendation);
+  return parts.join('. ');
+};
+const updateLastUpdate = () => {
+  document.getElementById('lastUpdate').textContent = `Última atualização: ${new Date().toLocaleTimeString('pt-BR')}`;
+};
+
+async function getJson(path){
+  const r = await fetch(API + path);
+  const txt = await r.text();
+  const body = txt ? (()=>{try{return JSON.parse(txt);}catch{return {raw:txt};}})() : {};
+  if(!r.ok) throw new Error(body.error || body.message || body.raw || `HTTP ${r.status}`);
+  return body;
+}
+
+function renderStats({tenants=0, devices=0, online=0, actions=0, efficiency=100, topFailure='—'}){
+  document.getElementById('stats').innerHTML = `
+    <div class='card'><div class='label'>Clientes atendidos</div><div class='kpi'>${tenants}</div></div>
+    <div class='card'><div class='label'>Equipamentos monitorados</div><div class='kpi'>${devices}</div></div>
+    <div class='card'><div class='label'>Agentes online agora</div><div class='kpi'>${online}</div></div>
+    <div class='card'><div class='label'>Autoações realizadas</div><div class='kpi'>${actions}</div></div>
+    <div class='card'><div class='label'>Eficiência de tratamento</div><div class='kpi'>${efficiency}%</div><div class='hint'>Principal bloqueio: ${topFailure}</div></div>`;
+}
+
+function renderAlerts(items, byAgent){
+  const tbody = document.querySelector('#alerts tbody');
+  tbody.innerHTML = '';
+  const grouped = {};
+  items.forEach(a=>{
+    const key = `${a.agent_id}|${a.severity}|${a.cause}`;
+    const ts = a.ts || a.timestamp || a.created_at;
+    if(!grouped[key]) grouped[key] = { ...a, count:0, first:ts, last:ts };
+    grouped[key].count += 1;
+    grouped[key].first = grouped[key].first && ts && grouped[key].first < ts ? grouped[key].first : ts;
+    grouped[key].last = grouped[key].last && ts && grouped[key].last > ts ? grouped[key].last : ts;
+  });
+  const rows = Object.values(grouped).sort((a,b)=>b.count-a.count);
+  if(!rows.length){ tbody.innerHTML = `<tr><td colspan='9' class='empty'>Sem problemas ativos no momento.</td></tr>`; return; }
+  rows.slice(0,80).forEach(a=>{
+    tbody.innerHTML += `<tr>
+      <td><span class='pill'>${severityText(a.severity || 'S3')}</span></td>
+      <td>${byAgent[a.agent_id] || a.agent_id || 'Equipamento não identificado'}</td>
+      <td>${simpleProblem(a.cause)}</td>
+      <td>${topProcess(a)}</td>
+      <td>${a.count}</td>
+      <td>${safeDate(a.first)}</td>
+      <td>${safeDate(a.last)}</td>
+      <td>${recommendedAction(a.cause, a.count)}</td>
+      <td>${clientExplanation(a)}</td>
+    </tr>`;
+  });
+}
+
+function renderAudits(items, byAgent){
+  const tbody = document.querySelector('#audits tbody');
+  tbody.innerHTML = '';
+  if(!items.length){ tbody.innerHTML = `<tr><td colspan='11' class='empty'>Sem autoações recentes.</td></tr>`; return; }
+  items.slice(0,40).forEach(x=>{
+    const ctx = x.payload?.post_state?.operational_context || {};
+    const confidence = Number(ctx.decision_confidence ?? 0);
+    const conf = ctx.decision_confidence != null ? `${Math.round(confidence * 100)}%` : 'n/a';
+    const status = x.payload?.execution_status || '';
+    const incident = x.payload?.post_state?.incident || x.payload?.pre_state?.incident || {};
+    const incidentId = incident.incident_id ? `${incident.incident_id}` : '—';
+    const attempts = Number(incident.incident_attempts_used ?? 0);
+    const budget = Number(incident.incident_action_budget ?? 0);
+    const budgetCell = budget > 0 ? `${attempts} / ${budget}` : `${attempts} / —`;
+    tbody.innerHTML += `<tr>
+      <td>${byAgent[x.agent_id] || x.agent_id || 'Equipamento não identificado'}</td>
+      <td>${incidentId}</td>
+      <td>${budgetCell}</td>
+      <td>${incidentStateText(incident.incident_state)}</td>
+      <td>${actionText(x.payload?.action_name)}</td>
+      <td>${statusText(status)}</td>
+      <td>${effectivenessText(status, confidence)}</td>
+      <td>${conf}</td>
+      <td>${clearFailureReason(x.payload)}</td>
+      <td>${nextStep(status, x.payload)}</td>
+      <td>${safeEpoch(x.received_at)}</td>
+    </tr>`;
+  });
+}
+
+async function refreshDashboard(){
+  try{
+    const [overview, devices, alerts, audits] = await Promise.all([
+      getJson('/v1/overview').catch(()=>({})),
+      getJson('/v1/devices?page=1&page_size=50').catch(()=>({items:[]})),
+      getJson('/v1/alerts/active').catch(()=>({items:[]})),
+      getJson('/v1/audit/actions').catch(()=>({items:[]})),
+    ]);
+    renderStats({
+      tenants: overview.tenants_count || new Set((devices.items||[]).map(d=>d.tenant_id)).size,
+      devices: (devices.items || []).length,
+      online: overview.agents_status?.online || 0,
+      actions: (audits.items || []).length,
+      efficiency: Number(overview.remediation_efficiency?.efficiency_rate_percent ?? 100).toFixed(1),
+      topFailure: categoryLabel(overview.remediation_efficiency?.top_failure_categories?.[0]?.category),
+    });
+    const byAgent = {};
+    (devices.items || []).forEach(d => {
+      if (d.agent_id) byAgent[d.agent_id] = d.hostname || `Equipamento ${String(d.device_id || '').slice(0,8)}`;
+    });
+    renderAlerts(alerts.items || [], byAgent);
+    renderAudits(audits.items || [], byAgent);
+    updateLastUpdate();
+  }catch(err){
+    document.querySelector('#alerts tbody').innerHTML = `<tr><td colspan='9' class='empty'>Erro ao carregar painel: ${err.message}</td></tr>`;
+  }
+}
+
+function setupLiveRefresh(){
+  const btn = document.getElementById('toggleLive');
+  const liveStatus = document.getElementById('liveStatus');
+  btn.addEventListener('click', () => {
+    liveEnabled = !liveEnabled;
+    if (liveEnabled) {
+      liveStatus.textContent = 'Atualização em tempo real: ativa (10s)';
+      btn.textContent = 'Pausar atualização';
+      liveTimer = setInterval(refreshDashboard, REFRESH_MS);
+      refreshDashboard();
+      return;
+    }
+    liveStatus.textContent = 'Atualização em tempo real: pausada';
+    btn.textContent = 'Retomar atualização';
+    if (liveTimer) clearInterval(liveTimer);
+  });
+}
+
+(async function init(){
+  setupLiveRefresh();
+  await refreshDashboard();
+  liveTimer = setInterval(refreshDashboard, REFRESH_MS);
+})();
+</script>
+</body>
+</html>
