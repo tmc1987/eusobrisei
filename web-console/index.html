@@ -24,6 +24,12 @@
     h1{margin:0 0 6px;color:var(--text-strong);font-size:40px;font-weight:800}
     .sub{margin:0 0 12px;color:var(--muted)}
     .warn{margin:0 0 16px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(15,31,68,.6);color:var(--text-strong)}
+    .live{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(15,31,68,.45)}
+    .live .left{display:flex;gap:8px;align-items:center}
+    .dot{width:10px;height:10px;border-radius:999px;background:#2dd4bf;box-shadow:0 0 8px rgba(45,212,191,.7)}
+    .btn{border:1px solid var(--line);background:#0f1f44;color:var(--text-strong);padding:6px 10px;border-radius:8px;cursor:pointer}
+    .btn:hover{filter:brightness(1.1)}
+    .hint{font-size:12px;color:var(--muted)}
 
     .stats{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px;margin-bottom:16px}
     .card{padding:12px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(170deg,var(--panel-2),var(--panel));}
@@ -44,6 +50,14 @@
   <h1>Painel Técnico (Read-only + Gestão de Policies Dev)</h1>
   <p class="sub">Modo provisório de desenvolvimento. Sem login complexo. Sem ações remotas perigosas.</p>
   <p class="warn"><b>AVISO:</b> Policies nesta tela são provisórias de desenvolvimento. O agente pode entrar em fallback local se não conseguir obter policy central. Precedência aplicada: tenant → grupo → dispositivo.</p>
+  <div class="live">
+    <div class="left">
+      <span class="dot"></span>
+      <b id="liveStatus">Atualização em tempo real: ativa (10s)</b>
+      <span class="hint" id="lastUpdate">Aguardando primeira atualização…</span>
+    </div>
+    <button class="btn" id="toggleLive">Pausar atualização</button>
+  </div>
 
   <div class="stats" id="stats"></div>
 
@@ -51,7 +65,7 @@
     <h2>Problemas Detectados (agrupados)</h2>
     <table id="alerts">
       <thead>
-        <tr><th>Prioridade</th><th>Equipamento</th><th>O que aconteceu</th><th>Ocorrências</th><th>Primeiro registro</th><th>Último registro</th><th>Auto-resolução padrão</th></tr>
+        <tr><th>Prioridade</th><th>Equipamento</th><th>O que aconteceu</th><th>Processo mais impactante</th><th>Ocorrências</th><th>Primeiro registro</th><th>Último registro</th><th>Auto-resolução padrão</th><th>Explicação clara ao cliente</th></tr>
       </thead>
       <tbody></tbody>
     </table>
@@ -61,7 +75,7 @@
     <h2>Autoações Executadas</h2>
     <table id="audits">
       <thead>
-        <tr><th>Equipamento</th><th>Auto-resolução aplicada</th><th>Situação final</th><th>Efeito prático</th><th>Confiança</th><th>Próximo passo automático</th><th>Registrado em</th></tr>
+        <tr><th>Equipamento</th><th>Auto-resolução aplicada</th><th>Situação final</th><th>Efeito prático</th><th>Confiança</th><th>Motivo técnico (claro)</th><th>Próximo passo automático</th><th>Registrado em</th></tr>
       </thead>
       <tbody></tbody>
     </table>
@@ -70,6 +84,9 @@
 
 <script>
 const API = localStorage.getItem('api_base') || 'http://127.0.0.1:8080';
+const REFRESH_MS = 10000;
+let liveTimer = null;
+let liveEnabled = true;
 const safeDate = v => v ? (isNaN(new Date(v).getTime()) ? String(v) : new Date(v).toLocaleString('pt-BR')) : '—';
 const safeEpoch = v => v ? new Date(v * 1000).toLocaleString('pt-BR') : '—';
 const severityText = sev => ({S4:'Crítica',S3:'Alta',S2:'Média',S1:'Baixa'})[sev] || 'Média';
@@ -101,6 +118,31 @@ const effectivenessText = (status, confidence) => {
   return 'Falha na auto-resolução';
 };
 const nextStep = status => status === 'success' ? 'Manter proteção automática ativa' : 'Executar próxima auto-resolução disponível + escalar';
+const topProcess = evt => {
+  const p = (evt.top_processes || [])[0];
+  if (!p) return 'Não identificado';
+  const cpu = p.cpu_percent != null ? `CPU ${Math.round(p.cpu_percent)}%` : null;
+  const mem = p.memory_percent != null ? `RAM ${Math.round(p.memory_percent)}%` : null;
+  return `${p.name || 'Processo'}${cpu || mem ? ` (${[cpu, mem].filter(Boolean).join(' | ')})` : ''}`;
+};
+const clientExplanation = evt => {
+  const c = String(evt.cause || '').toLowerCase();
+  const proc = (evt.top_processes || [])[0]?.name;
+  if (c.includes('travado')) return `O aplicativo ${proc || 'alvo'} parou de responder e o sistema tentou estabilizar sem risco.`;
+  if (c.includes('memória') || c.includes('ram')) return `Há consumo de memória acima do ideal${proc ? ` com maior peso em ${proc}` : ''}.`;
+  if (c.includes('cpu')) return `Há consumo de processamento acima do ideal${proc ? ` concentrado em ${proc}` : ''}.`;
+  if (c.includes('disco')) return `Há uso de disco acima do ideal${proc ? ` puxado por ${proc}` : ''}.`;
+  return 'O sistema detectou degradação e aplicou contenção automática segura.';
+};
+const clearFailureReason = payload => {
+  const post = payload?.post_state || {};
+  const msg = payload?.error_message || post.message || 'Sem detalhe técnico disponível';
+  const recommendation = post.human_recommendation || '';
+  return recommendation ? `${msg}. ${recommendation}` : msg;
+};
+const updateLastUpdate = () => {
+  document.getElementById('lastUpdate').textContent = `Última atualização: ${new Date().toLocaleTimeString('pt-BR')}`;
+};
 
 async function getJson(path){
   const r = await fetch(API + path);
@@ -131,16 +173,18 @@ function renderAlerts(items, byAgent){
     grouped[key].last = grouped[key].last && ts && grouped[key].last > ts ? grouped[key].last : ts;
   });
   const rows = Object.values(grouped).sort((a,b)=>b.count-a.count);
-  if(!rows.length){ tbody.innerHTML = `<tr><td colspan='7' class='empty'>Sem problemas ativos no momento.</td></tr>`; return; }
+  if(!rows.length){ tbody.innerHTML = `<tr><td colspan='9' class='empty'>Sem problemas ativos no momento.</td></tr>`; return; }
   rows.slice(0,80).forEach(a=>{
     tbody.innerHTML += `<tr>
       <td><span class='pill'>${severityText(a.severity || 'S3')}</span></td>
       <td>${byAgent[a.agent_id] || a.agent_id || 'Equipamento não identificado'}</td>
       <td>${simpleProblem(a.cause)}</td>
+      <td>${topProcess(a)}</td>
       <td>${a.count}</td>
       <td>${safeDate(a.first)}</td>
       <td>${safeDate(a.last)}</td>
       <td>${recommendedAction(a.cause, a.count)}</td>
+      <td>${clientExplanation(a)}</td>
     </tr>`;
   });
 }
@@ -148,7 +192,7 @@ function renderAlerts(items, byAgent){
 function renderAudits(items, byAgent){
   const tbody = document.querySelector('#audits tbody');
   tbody.innerHTML = '';
-  if(!items.length){ tbody.innerHTML = `<tr><td colspan='7' class='empty'>Sem autoações recentes.</td></tr>`; return; }
+  if(!items.length){ tbody.innerHTML = `<tr><td colspan='8' class='empty'>Sem autoações recentes.</td></tr>`; return; }
   items.slice(0,40).forEach(x=>{
     const ctx = x.payload?.post_state?.operational_context || {};
     const confidence = Number(ctx.decision_confidence ?? 0);
@@ -160,13 +204,14 @@ function renderAudits(items, byAgent){
       <td>${statusText(status)}</td>
       <td>${effectivenessText(status, confidence)}</td>
       <td>${conf}</td>
+      <td>${clearFailureReason(x.payload)}</td>
       <td>${nextStep(status)}</td>
       <td>${safeEpoch(x.received_at)}</td>
     </tr>`;
   });
 }
 
-(async function init(){
+async function refreshDashboard(){
   try{
     const [overview, devices, alerts, audits] = await Promise.all([
       getJson('/v1/overview').catch(()=>({})),
@@ -186,9 +231,34 @@ function renderAudits(items, byAgent){
     });
     renderAlerts(alerts.items || [], byAgent);
     renderAudits(audits.items || [], byAgent);
+    updateLastUpdate();
   }catch(err){
-    document.querySelector('#alerts tbody').innerHTML = `<tr><td colspan='7' class='empty'>Erro ao carregar painel: ${err.message}</td></tr>`;
+    document.querySelector('#alerts tbody').innerHTML = `<tr><td colspan='9' class='empty'>Erro ao carregar painel: ${err.message}</td></tr>`;
   }
+}
+
+function setupLiveRefresh(){
+  const btn = document.getElementById('toggleLive');
+  const liveStatus = document.getElementById('liveStatus');
+  btn.addEventListener('click', () => {
+    liveEnabled = !liveEnabled;
+    if (liveEnabled) {
+      liveStatus.textContent = 'Atualização em tempo real: ativa (10s)';
+      btn.textContent = 'Pausar atualização';
+      liveTimer = setInterval(refreshDashboard, REFRESH_MS);
+      refreshDashboard();
+      return;
+    }
+    liveStatus.textContent = 'Atualização em tempo real: pausada';
+    btn.textContent = 'Retomar atualização';
+    if (liveTimer) clearInterval(liveTimer);
+  });
+}
+
+(async function init(){
+  setupLiveRefresh();
+  await refreshDashboard();
+  liveTimer = setInterval(refreshDashboard, REFRESH_MS);
 })();
 </script>
 </body>
