@@ -126,6 +126,7 @@ const nextStep = (status, payload) => {
   if (category === 'protected_process') return 'Evitar intervenção forçada; abrir correção do aplicativo relacionado.';
   if (category === 'permission_denied') return 'Ajustar privilégios do agente e repetir diagnóstico.';
   if (category === 'cooldown_active') return 'Aguardar fim do cooldown e revalidar indicadores.';
+  if (category === 'suppressed_ineffective') return 'Escalar para especialista com evidências e trocar estratégia de remediação.';
   return 'Executar próxima auto-resolução disponível + escalar para especialista.';
 };
 const categoryLabel = c => ({
@@ -136,6 +137,7 @@ const categoryLabel = c => ({
   capability_not_available: 'Recurso não disponível neste agente',
   no_eligible_target: 'Sem processo seguro para ajuste automático',
   restart_failed: 'Tentativa de reinício não concluída',
+  suppressed_ineffective: 'Ação pausada por baixa efetividade',
   execution_failed: 'Falha de execução da auto-resolução',
 }[c] || 'Motivo técnico não classificado');
 const categoryGuidance = c => ({
@@ -146,6 +148,7 @@ const categoryGuidance = c => ({
   capability_not_available: 'Habilitar dependência/recurso no agente antes de repetir a tentativa.',
   no_eligible_target: 'Sem alvo seguro no momento. Aplicar mitigação conservadora e acompanhar recorrência.',
   restart_failed: 'Validar comando de restart e saúde do aplicativo antes de nova tentativa.',
+  suppressed_ineffective: 'Evitar repetir a mesma ação. Escalar com evidências e revisar estratégia de remediação.',
   execution_failed: 'Coletar logs do agente e abrir investigação técnica com evidências.',
 }[c] || 'Coletar logs e validar configuração para próxima execução.');
 const topProcess = evt => {

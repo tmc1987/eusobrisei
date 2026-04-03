@@ -131,6 +131,21 @@ class ActionExecutorTests(unittest.TestCase):
         self.assertEqual(result.action, "restart_process")
         self.assertIn("fallback de recorrência", result.message.lower())
 
+    def test_cooldown_is_reported_as_safe_mitigation_with_category(self):
+        cfg = {
+            "actions": {"cooldown_seconds": 999},
+            "processes": {"critical_names": [], "restart_allowlist": [], "restart_commands": {}},
+        }
+        ex = ActionExecutor(cfg)
+        req = ActionRequest(action="thermal_protect", reason="temp alta", params={}, severity="high")
+        with patch.object(ActionExecutor, "_thermal_protect", return_value=actions.ActionResult("thermal_protect", True, "ok", outcome="mitigated")):
+            first = ex.execute([req], {"processes": []})[0]
+            second = ex.execute([req], {"processes": []})[0]
+        self.assertTrue(first.success)
+        self.assertTrue(second.success)
+        self.assertTrue(second.cooldown_applied)
+        self.assertEqual((second.evidence or {}).get("error_category"), "cooldown_active")
+
 
 if __name__ == "__main__":
     unittest.main()

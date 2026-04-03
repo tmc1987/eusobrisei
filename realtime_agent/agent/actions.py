@@ -51,8 +51,17 @@ class ActionExecutor:
                         severity=req.severity,
                         outcome="failed",
                         human_recommendation=req.human_recommendation or "Mitigação local esgotada. Requer intervenção humana.",
-                        evidence={"suppressed": True, "ineffective_count": self._ineffective_count[action_key]},
-                        operational_context={"action_key": action_key},
+                        evidence={
+                            "suppressed": True,
+                            "ineffective_count": self._ineffective_count[action_key],
+                            "error_category": "suppressed_ineffective",
+                            "block_reason": "Ação automaticamente suprimida por recorrência ineficaz.",
+                        },
+                        operational_context={
+                            "action_key": action_key,
+                            "error_category": "suppressed_ineffective",
+                            "block_reason": "Ação automaticamente suprimida por recorrência ineficaz.",
+                        },
                     )
                 )
                 continue
@@ -64,14 +73,23 @@ class ActionExecutor:
                 results.append(
                     ActionResult(
                         req.action,
-                        False,
+                        True,
                         f"Cooldown ativo para {req.action}",
                         cooldown_applied=True,
                         severity=req.severity,
                         outcome="mitigated",
                         human_recommendation="Aguardar cooldown para evitar loop de autoação.",
-                        evidence={"cooldown_seconds": cooldown, "seconds_remaining": round(cooldown - (now - last), 2)},
-                        operational_context={"action_key": action_key},
+                        evidence={
+                            "cooldown_seconds": cooldown,
+                            "seconds_remaining": round(cooldown - (now - last), 2),
+                            "error_category": "cooldown_active",
+                            "block_reason": "Ação em janela de cooldown para evitar loop.",
+                        },
+                        operational_context={
+                            "action_key": action_key,
+                            "error_category": "cooldown_active",
+                            "block_reason": "Ação em janela de cooldown para evitar loop.",
+                        },
                     )
                 )
                 continue
