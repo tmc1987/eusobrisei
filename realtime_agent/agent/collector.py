@@ -18,6 +18,7 @@ class Collector:
 
     def __init__(self) -> None:
         self._last_call_ts = time.time()
+        self._cpu_count = psutil.cpu_count(logical=True) if psutil else 1
         if psutil:
             psutil.cpu_percent(interval=None)
 
@@ -50,7 +51,7 @@ class Collector:
                     ProcessSample(
                         pid=info["pid"],
                         name=info.get("name") or "unknown",
-                        cpu_percent=info.get("cpu_percent") or 0.0,
+                        cpu_percent=self._normalize_process_cpu(info.get("cpu_percent") or 0.0),
                         memory_percent=info.get("memory_percent") or 0.0,
                         status=info.get("status") or "unknown",
                         create_time=info.get("create_time") or 0.0,
@@ -61,6 +62,16 @@ class Collector:
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
         return samples
+
+    def _normalize_process_cpu(self, value: float) -> float:
+        """
+        psutil no Windows pode reportar CPU por processo acima de 100%
+        (soma em múltiplos núcleos). Para comunicação com cliente e
+        alinhamento com Task Manager, normalizamos para base 0-100%.
+        """
+        cpu_count = max(int(self._cpu_count or 1), 1)
+        normalized = float(value) / cpu_count
+        return max(0.0, min(100.0, normalized))
 
     def _get_temperature(self) -> Optional[float]:
         try:
