@@ -46,6 +46,9 @@
       "explorer.exe",
       "svchost.exe"
     ],
+    "non_throttle_names": [
+      "SystemSettings.exe"
+    ],
     "restart_commands": {
       "notepad.exe": "start notepad.exe"
     },

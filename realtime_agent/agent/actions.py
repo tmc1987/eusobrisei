@@ -79,6 +79,10 @@ class ActionExecutor:
             try:
                 if req.action == "throttle_top_cpu_process":
                     result = self._throttle_top_cpu_process(snapshot, req.params.get("target_name"), req.params.get("resource", "cpu"))
+                    if not result.success:
+                        fallback = self._try_safety_fallback(req, result.message)
+                        if fallback:
+                            result = fallback
                 elif req.action == "thermal_protect":
                     result = self._thermal_protect()
                 elif req.action == "restart_process":
@@ -119,6 +123,27 @@ class ActionExecutor:
 
         return results
 
+    def _try_safety_fallback(self, req: ActionRequest, reason: str) -> ActionResult | None:
+        allowed = set(self.config.get("actions", {}).get("allowed_actions", []))
+        if "thermal_protect" not in allowed:
+            return None
+        fallback = self._thermal_protect()
+        if not fallback.success:
+            return None
+        fallback.message = f"{fallback.message} (fallback após throttling indisponível: {reason})"
+        fallback.human_recommendation = (
+            "Processo não elegível para ajuste automático. Mitigação conservadora aplicada; "
+            "coletar evidências e conduzir correção humana do aplicativo."
+        )
+        fallback.severity = req.severity
+        fallback.outcome = "mitigated"
+        fallback.operational_context = {
+            **(fallback.operational_context or {}),
+            "fallback_from": req.action,
+            "fallback_reason": reason,
+        }
+        return fallback
+
     def _throttle_top_cpu_process(self, snapshot: Dict, target_name: str | None = None, resource: str = "cpu") -> ActionResult:
         if not psutil:
             return ActionResult("throttle_top_cpu_process", False, "STUB: psutil não instalado")
@@ -130,34 +155,54 @@ class ActionExecutor:
         else:
             score = lambda p: p.cpu_percent
         processes = sorted(snapshot["processes"], key=score, reverse=True)
-        critical = set(self.config["processes"].get("critical_names", []))
-        critical_lower = {c.lower() for c in critical}
-        target = None
+        blocked_names = self._blocked_for_throttle()
+        candidates = []
         if target_name:
-            target = next((p for p in processes if p.name.lower() == str(target_name).lower() and p.name.lower() not in critical_lower), None)
-        if target is None:
-            target = next((p for p in processes if p.name.lower() not in critical_lower), None)
-        if not target:
-            return ActionResult("throttle_top_cpu_process", False, "Nenhum processo elegível para throttling")
-
-        proc = psutil.Process(target.pid)
-        old_nice = proc.nice()
-
-        if platform.system().lower() == "windows":
-            proc.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+            target_lower = str(target_name).lower()
+            candidates.extend([p for p in processes if p.name.lower() == target_lower])
+            candidates.extend([p for p in processes if p.name.lower() != target_lower])
         else:
-            proc.nice(min(old_nice + 5, 19))
+            candidates = processes
 
-        rollback_at = time.time() + int(self.config["actions"].get("priority_rollback_seconds", 120))
-        self._priority_rollback.append({"pid": target.pid, "old_nice": old_nice, "rollback_at": rollback_at})
+        skip_reasons: List[str] = []
+        for target in candidates:
+            if target.name.lower() in blocked_names:
+                skip_reasons.append(f"{target.name}: protegido")
+                continue
+            try:
+                proc = psutil.Process(target.pid)
+                old_nice = proc.nice()
 
+                if platform.system().lower() == "windows":
+                    proc.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+                    new_priority = "below_normal"
+                else:
+                    proc.nice(min(old_nice + 5, 19))
+                    new_priority = "nice+5"
+
+                rollback_at = time.time() + int(self.config["actions"].get("priority_rollback_seconds", 120))
+                self._priority_rollback.append({"pid": target.pid, "old_nice": old_nice, "rollback_at": rollback_at})
+
+                return ActionResult(
+                    "throttle_top_cpu_process",
+                    True,
+                    f"Prioridade reduzida para {target.name} (PID {target.pid})",
+                    outcome="mitigated",
+                    evidence={"target_pid": target.pid, "target_name": target.name, "resource": resource, "new_priority": new_priority},
+                    operational_context={"rollback_at": rollback_at},
+                )
+            except (psutil.NoSuchProcess, psutil.AccessDenied, PermissionError) as exc:
+                skip_reasons.append(f"{target.name}: {exc.__class__.__name__}")
+                continue
+
+        detail = "; ".join(skip_reasons[:4]) if skip_reasons else "sem processos candidatos"
         return ActionResult(
             "throttle_top_cpu_process",
-            True,
-            f"Prioridade reduzida para {target.name} (PID {target.pid})",
-            outcome="mitigated",
-            evidence={"target_pid": target.pid, "target_name": target.name, "resource": resource, "new_priority": "below_normal"},
-            operational_context={"rollback_at": rollback_at},
+            False,
+            "Nenhum processo elegível para throttling seguro",
+            outcome="failed",
+            human_recommendation="Aplicativo protegido/crítico ou sem permissão de ajuste. Priorizar correção manual do app recorrente.",
+            evidence={"skip_reasons": skip_reasons[:10], "resource": resource, "target_name": target_name, "detail": detail},
         )
 
     def _restore_priorities_if_due(self) -> None:
@@ -224,6 +269,19 @@ class ActionExecutor:
             )
         except (psutil.NoSuchProcess, psutil.AccessDenied, OSError) as exc:
             return ActionResult("restart_process", False, f"Falha ao reiniciar {name}: {exc}")
+
+    def _blocked_for_throttle(self) -> set[str]:
+        critical = {c.lower() for c in self.config.get("processes", {}).get("critical_names", [])}
+        explicit = {c.lower() for c in self.config.get("processes", {}).get("non_throttle_names", [])}
+        default_windows_protected = {
+            "systemsettings.exe",
+            "dwm.exe",
+            "csrss.exe",
+            "wininit.exe",
+            "winlogon.exe",
+            "lsass.exe",
+        }
+        return critical | explicit | default_windows_protected
 
     @staticmethod
     def _action_key(req: ActionRequest) -> str:

@@ -1,5 +1,7 @@
 import unittest
+from unittest.mock import patch
 
+from agent import actions
 from agent.actions import ActionExecutor
 from agent.rules import ActionRequest, RuleEngine
 from agent.models import Alert
@@ -38,6 +40,58 @@ class ActionExecutorTests(unittest.TestCase):
         self.assertEqual(req1.recurrence_count, 1)
         self.assertEqual(req2.recurrence_count, 2)
         self.assertTrue(req2.human_recommendation)
+
+    def test_throttle_skips_blocked_process_and_uses_next_candidate(self):
+        class P:
+            def __init__(self, pid):
+                self.pid = pid
+
+            def nice(self, value=None):
+                return 10 if value is None else None
+
+        class PsutilStub:
+            BELOW_NORMAL_PRIORITY_CLASS = 10
+            NoSuchProcess = RuntimeError
+            AccessDenied = PermissionError
+
+            @staticmethod
+            def Process(pid):
+                return P(pid)
+
+        cfg = {
+            "actions": {"cooldown_seconds": 0, "allowed_actions": ["throttle_top_cpu_process"]},
+            "processes": {"critical_names": [], "non_throttle_names": ["SystemSettings.exe"], "restart_allowlist": [], "restart_commands": {}},
+        }
+        ex = ActionExecutor(cfg)
+        req = ActionRequest(action="throttle_top_cpu_process", reason="cpu alta", params={"target_name": "SystemSettings.exe"}, severity="high")
+        snapshot = {
+            "processes": [
+                type("Proc", (), {"pid": 10, "name": "SystemSettings.exe", "cpu_percent": 80, "memory_percent": 5, "io_read_bytes": 0, "io_write_bytes": 0}),
+                type("Proc", (), {"pid": 11, "name": "chrome.exe", "cpu_percent": 40, "memory_percent": 10, "io_read_bytes": 0, "io_write_bytes": 0}),
+            ]
+        }
+        with patch.object(actions, "psutil", PsutilStub()):
+            result = ex.execute([req], snapshot)[0]
+        self.assertTrue(result.success)
+        self.assertIn("chrome.exe", result.message.lower())
+
+    def test_throttle_failure_uses_thermal_fallback_when_enabled(self):
+        cfg = {
+            "actions": {"cooldown_seconds": 0, "allowed_actions": ["throttle_top_cpu_process", "thermal_protect"]},
+            "processes": {"critical_names": ["chrome.exe"], "restart_allowlist": [], "restart_commands": {}},
+        }
+        ex = ActionExecutor(cfg)
+        req = ActionRequest(action="throttle_top_cpu_process", reason="cpu alta", params={"target_name": "chrome.exe"}, severity="high")
+        snapshot = {
+            "processes": [
+                type("Proc", (), {"pid": 11, "name": "chrome.exe", "cpu_percent": 40, "memory_percent": 10, "io_read_bytes": 0, "io_write_bytes": 0}),
+            ]
+        }
+        with patch.object(ActionExecutor, "_thermal_protect", return_value=actions.ActionResult("thermal_protect", True, "ok", outcome="mitigated")):
+            result = ex.execute([req], snapshot)[0]
+        self.assertTrue(result.success)
+        self.assertEqual(result.action, "thermal_protect")
+        self.assertIn("fallback", result.message.lower())
 
 
 if __name__ == "__main__":
