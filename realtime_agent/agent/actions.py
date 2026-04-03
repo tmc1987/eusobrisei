@@ -99,6 +99,18 @@ class ActionExecutor:
                     "strategy": req.strategy,
                     "decision_confidence": req.confidence,
                 }
+                if not result.success:
+                    failure = self._classify_failure(req.action, result.message)
+                    result.evidence = {
+                        **(result.evidence or {}),
+                        "error_category": failure["error_category"],
+                        "block_reason": failure["block_reason"],
+                    }
+                    result.operational_context = {
+                        **(result.operational_context or {}),
+                        "error_category": failure["error_category"],
+                        "block_reason": failure["block_reason"],
+                    }
 
                 if result.success:
                     self._last_action_at[action_key] = now
@@ -282,6 +294,25 @@ class ActionExecutor:
             "lsass.exe",
         }
         return critical | explicit | default_windows_protected
+
+    @staticmethod
+    def _classify_failure(action: str, message: str) -> Dict[str, str]:
+        m = (message or "").lower()
+        if "cooldown" in m:
+            return {"error_category": "cooldown_active", "block_reason": "Ação em janela de cooldown para evitar loop."}
+        if "allowlist" in m:
+            return {"error_category": "policy_blocked", "block_reason": "Processo fora de allowlist de ação automática."}
+        if "processo crítico" in m or "protegido" in m:
+            return {"error_category": "protected_process", "block_reason": "Processo protegido/sensível para ação automática."}
+        if "accessdenied" in m or "sem permissão" in m:
+            return {"error_category": "permission_denied", "block_reason": "Sem privilégio suficiente para aplicar remediação."}
+        if "stub" in m:
+            return {"error_category": "capability_not_available", "block_reason": "Capacidade ainda não implementada/disponível neste host."}
+        if "nenhum processo elegível" in m:
+            return {"error_category": "no_eligible_target", "block_reason": f"Nenhum alvo elegível para {action} com segurança."}
+        if "falha ao reiniciar" in m:
+            return {"error_category": "restart_failed", "block_reason": "Tentativa de reinício falhou no sistema operacional."}
+        return {"error_category": "execution_failed", "block_reason": f"Falha de execução em {action}."}
 
     @staticmethod
     def _action_key(req: ActionRequest) -> str:

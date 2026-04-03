@@ -137,8 +137,16 @@ const clientExplanation = evt => {
 const clearFailureReason = payload => {
   const post = payload?.post_state || {};
   const msg = payload?.error_message || post.message || 'Sem detalhe técnico disponível';
+  const operational = post.operational_context || {};
+  const evidence = post.evidence || {};
+  const category = operational.error_category || evidence.error_category;
+  const block = operational.block_reason || evidence.block_reason;
   const recommendation = post.human_recommendation || '';
-  return recommendation ? `${msg}. ${recommendation}` : msg;
+  const prefix = category ? `[${category}] ` : '';
+  const parts = [`${prefix}${msg}`];
+  if (block) parts.push(block);
+  if (recommendation) parts.push(recommendation);
+  return parts.join('. ');
 };
 const updateLastUpdate = () => {
   document.getElementById('lastUpdate').textContent = `Última atualização: ${new Date().toLocaleTimeString('pt-BR')}`;

@@ -93,6 +93,18 @@ class ActionExecutorTests(unittest.TestCase):
         self.assertEqual(result.action, "thermal_protect")
         self.assertIn("fallback", result.message.lower())
 
+    def test_failure_contains_structured_error_category(self):
+        cfg = {
+            "actions": {"cooldown_seconds": 0},
+            "processes": {"critical_names": [], "restart_allowlist": ["notepad.exe"], "restart_commands": {}},
+        }
+        ex = ActionExecutor(cfg)
+        req = ActionRequest(action="restart_process", reason="hung", params={"name": "chrome.exe", "pid": 1}, severity="high")
+        result = ex.execute([req], {"processes": []})[0]
+        self.assertFalse(result.success)
+        self.assertEqual((result.evidence or {}).get("error_category"), "policy_blocked")
+        self.assertIn("allowlist", (result.evidence or {}).get("block_reason", "").lower())
+
 
 if __name__ == "__main__":
     unittest.main()
