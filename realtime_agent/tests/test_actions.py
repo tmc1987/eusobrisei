@@ -105,6 +105,32 @@ class ActionExecutorTests(unittest.TestCase):
         self.assertEqual((result.evidence or {}).get("error_category"), "policy_blocked")
         self.assertIn("allowlist", (result.evidence or {}).get("block_reason", "").lower())
 
+    def test_throttle_failure_can_escalate_to_restart_on_recurrence(self):
+        cfg = {
+            "actions": {
+                "cooldown_seconds": 0,
+                "allowed_actions": ["throttle_top_cpu_process", "restart_process"],
+                "auto_restart_on_recurrence": True,
+            },
+            "processes": {"critical_names": [], "restart_allowlist": ["chrome.exe"], "restart_commands": {"chrome.exe": "start chrome.exe"}},
+        }
+        ex = ActionExecutor(cfg)
+        req = ActionRequest(
+            action="throttle_top_cpu_process",
+            reason="cpu alta",
+            params={"target_name": "chrome.exe", "target_pid": 123},
+            severity="high",
+            recurrence_count=3,
+        )
+        snapshot = {"processes": []}
+        with patch.object(ActionExecutor, "_throttle_top_cpu_process", return_value=actions.ActionResult("throttle_top_cpu_process", False, "falhou", outcome="failed")), patch.object(
+            ActionExecutor, "_restart_process", return_value=actions.ActionResult("restart_process", True, "reiniciado", outcome="resolved")
+        ):
+            result = ex.execute([req], snapshot)[0]
+        self.assertTrue(result.success)
+        self.assertEqual(result.action, "restart_process")
+        self.assertIn("fallback de recorrência", result.message.lower())
+
 
 if __name__ == "__main__":
     unittest.main()

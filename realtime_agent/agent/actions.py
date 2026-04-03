@@ -80,6 +80,10 @@ class ActionExecutor:
                 if req.action == "throttle_top_cpu_process":
                     result = self._throttle_top_cpu_process(snapshot, req.params.get("target_name"), req.params.get("resource", "cpu"))
                     if not result.success:
+                        restart_fallback = self._try_restart_fallback(req)
+                        if restart_fallback:
+                            result = restart_fallback
+                    if not result.success:
                         fallback = self._try_safety_fallback(req, result.message)
                         if fallback:
                             result = fallback
@@ -155,6 +159,32 @@ class ActionExecutor:
             "fallback_reason": reason,
         }
         return fallback
+
+    def _try_restart_fallback(self, req: ActionRequest) -> ActionResult | None:
+        target_name = req.params.get("target_name")
+        target_pid = req.params.get("target_pid")
+        if not target_name:
+            return None
+        if req.recurrence_count < 3:
+            return None
+        if not self.config.get("actions", {}).get("auto_restart_on_recurrence", False):
+            return None
+        restarted = self._restart_process(str(target_name), int(target_pid) if target_pid else None)
+        if not restarted.success:
+            return None
+        restarted.message = (
+            f"{restarted.message} (fallback de recorrência após throttling ineficaz em {target_name})"
+        )
+        restarted.human_recommendation = (
+            "Recorrência detectada. Reinício controlado aplicado para restaurar estabilidade sem ação remota perigosa."
+        )
+        restarted.outcome = "resolved"
+        restarted.operational_context = {
+            **(restarted.operational_context or {}),
+            "fallback_from": req.action,
+            "fallback_reason": "recurrence_restart",
+        }
+        return restarted
 
     def _throttle_top_cpu_process(self, snapshot: Dict, target_name: str | None = None, resource: str = "cpu") -> ActionResult:
         if not psutil:

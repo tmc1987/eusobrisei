@@ -39,7 +39,8 @@
     "safe_mode": true,
     "priority_rollback_seconds": 120,
     "allowed_priority_adjustments": true,
-    "auto_restart_hung_process": false
+    "auto_restart_hung_process": false,
+    "auto_restart_on_recurrence": false
   },
   "processes": {
     "critical_names": [
