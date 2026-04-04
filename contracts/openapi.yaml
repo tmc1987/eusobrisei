@@ -1,0 +1,248 @@
+openapi: 3.0.3
+info:
+  title: Plataforma Operacional - API Central (V1)
+  version: 1.0.0
+  description: |
+    API inicial para registro/autenticação de agentes, ingestão de eventos,
+    obtenção de políticas e envio de auditoria.
+servers:
+  - url: https://api.plataforma.local
+
+tags:
+  - name: Auth
+  - name: Agents
+  - name: Ingestion
+  - name: Policies
+  - name: Audit
+
+paths:
+  /v1/agents/bootstrap:
+    post:
+      tags: [Auth]
+      summary: Bootstrap inicial do agente via token de ativação
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/agent_bootstrap_request.json'
+      responses:
+        '201':
+          description: Agente registrado e credencial inicial emitida
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/agent_bootstrap_response.json'
+
+  /v1/agents/heartbeat:
+    post:
+      tags: [Agents]
+      summary: Heartbeat periódico do agente
+      parameters:
+        - $ref: '#/components/parameters/XAgentId'
+        - $ref: '#/components/parameters/XRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/heartbeat_request.json'
+      responses:
+        '202':
+          description: Heartbeat aceito
+
+  /v1/ingestion/events:batch:
+    post:
+      tags: [Ingestion]
+      summary: Ingestão de lote de eventos/alertas gerados pelo agente
+      parameters:
+        - $ref: '#/components/parameters/XAgentId'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/events_batch_request.json'
+      responses:
+        '202':
+          description: Lote aceito
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/events_batch_response.json'
+
+  /v1/audit/actions:batch:
+    post:
+      tags: [Audit]
+      summary: Ingestão de auditoria de ações locais executadas pelo agente
+      parameters:
+        - $ref: '#/components/parameters/XAgentId'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/action_audit_batch_request.json'
+      responses:
+        '202':
+          description: Auditoria aceita
+
+  /v1/policies/resolved:
+    get:
+      tags: [Policies]
+      summary: Retorna política efetiva resolvida para o agente
+      parameters:
+        - $ref: '#/components/parameters/XAgentId'
+      responses:
+        '200':
+          description: Política efetiva
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/policy_document.json'
+
+  /v1/policies:
+    get:
+      tags: [Policies]
+      summary: Lista policies de desenvolvimento com filtros por escopo/status
+      parameters:
+        - name: tenant_id
+          in: query
+          schema: { type: string }
+        - name: group_id
+          in: query
+          schema: { type: string }
+        - name: device_id
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, disabled]
+      responses:
+        '200':
+          description: Lista de policies
+    post:
+      tags: [Policies]
+      summary: Cria policy de desenvolvimento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/policy_document.json'
+      responses:
+        '201':
+          description: Policy criada
+
+  /v1/policies/{policy_id}:
+    get:
+      tags: [Policies]
+      summary: Detalha policy por id
+      parameters:
+        - name: policy_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Detalhe da policy
+        '404':
+          description: Não encontrada
+    put:
+      tags: [Policies]
+      summary: Edita policy de desenvolvimento
+      parameters:
+        - name: policy_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/policy_document.json'
+      responses:
+        '200':
+          description: Policy atualizada
+        '404':
+          description: Não encontrada
+
+  /v1/policies/{policy_id}/disable:
+    post:
+      tags: [Policies]
+      summary: Desativa policy de desenvolvimento
+      parameters:
+        - name: policy_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Policy desativada
+        '404':
+          description: Não encontrada
+
+  /v1/policies/audit:
+    get:
+      tags: [Policies]
+      summary: Lista auditoria de alterações de policies
+      parameters:
+        - name: policy_id
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Histórico de auditoria
+
+  /v1/policies/effective/device/{device_id}:
+    get:
+      tags: [Policies]
+      summary: Retorna policy efetiva para o último agente do dispositivo
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Policy efetiva
+        '404':
+          description: Dispositivo/Agente não encontrado
+
+components:
+  parameters:
+    XAgentId:
+      name: X-Agent-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+    XRequestId:
+      name: X-Request-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        maxLength: 64
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        maxLength: 128
+  securitySchemes:
+    AgentBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - AgentBearer: []

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent_bootstrap_response.json",
+  "title": "AgentBootstrapResponse",
+  "type": "object",
+  "required": ["agent_id", "device_id", "tenant_id", "access_token", "expires_at"],
+  "properties": {
+    "agent_id": { "type": "string", "format": "uuid" },
+    "device_id": { "type": "string", "format": "uuid" },
+    "tenant_id": { "type": "string", "format": "uuid" },
+    "access_token": { "type": "string" },
+    "expires_at": { "type": "string", "format": "date-time" },
+    "mtls": {
+      "type": "object",
+      "properties": {
+        "required": { "type": "boolean" },
+        "cert_pem": { "type": "string" },
+        "ca_pem": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
