@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "events_batch_response.json",
+  "title": "EventsBatchResponse",
+  "type": "object",
+  "required": ["batch_id", "accepted", "rejected"],
+  "properties": {
+    "batch_id": { "type": "string", "format": "uuid" },
+    "accepted": { "type": "integer", "minimum": 0 },
+    "rejected": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["event_id", "reason"],
+        "properties": {
+          "event_id": { "type": "string", "format": "uuid" },
+          "reason": { "type": "string", "maxLength": 256 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
