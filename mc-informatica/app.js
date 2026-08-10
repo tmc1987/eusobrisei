@@ -1,6 +1,9 @@
 /* ============================================================
    MC INFORMÁTICA — Loja
    ------------------------------------------------------------
+   O site não realiza venda direta: todo anúncio leva o cliente
+   para o WhatsApp da loja, onde a negociação é fechada.
+
    COMO EDITAR A LOJA:
    1. NUMERO_WHATSAPP: coloque o número da loja com DDI+DDD,
       só dígitos. Ex.: 5511999998888
@@ -147,56 +150,10 @@ const PRODUTOS = [
 const formatarPreco = (valor) =>
     valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-// ---------- Carrinho (persistido no navegador) ----------
-let carrinho = JSON.parse(localStorage.getItem("mc_carrinho") || "[]");
-
-function salvarCarrinho() {
-    localStorage.setItem("mc_carrinho", JSON.stringify(carrinho));
-}
-
-function totalCarrinho() {
-    return carrinho.reduce((soma, item) => soma + item.preco * item.qtd, 0);
-}
-
-function quantidadeCarrinho() {
-    return carrinho.reduce((soma, item) => soma + item.qtd, 0);
-}
-
-function adicionarAoCarrinho(id, abrir = false) {
-    const produto = PRODUTOS.find((p) => p.id === id);
-    if (!produto) return;
-
-    const existente = carrinho.find((item) => item.id === id);
-    if (existente) {
-        existente.qtd += 1;
-    } else {
-        carrinho.push({ id: produto.id, nome: produto.nome, preco: produto.preco, qtd: 1 });
-    }
-
-    salvarCarrinho();
-    renderizarCarrinho();
-    if (abrir) {
-        abrirCarrinho();
-    } else {
-        mostrarToast("Produto adicionado ao carrinho!");
-    }
-}
-
-function alterarQuantidade(id, delta) {
-    const item = carrinho.find((i) => i.id === id);
-    if (!item) return;
-    item.qtd += delta;
-    if (item.qtd <= 0) {
-        carrinho = carrinho.filter((i) => i.id !== id);
-    }
-    salvarCarrinho();
-    renderizarCarrinho();
-}
-
-function removerDoCarrinho(id) {
-    carrinho = carrinho.filter((i) => i.id !== id);
-    salvarCarrinho();
-    renderizarCarrinho();
+// ---------- WhatsApp ----------
+function abrirWhatsApp(mensagem) {
+    const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
+    window.open(url, "_blank");
 }
 
 // ---------- Renderização de produtos ----------
@@ -224,7 +181,6 @@ function renderizarProdutos(categoria = "todos") {
                 p.condicao === "usado"
                     ? '<span class="selo selo-usado">Usado</span>'
                     : '<span class="selo selo-novo">Novo</span>';
-            const parcela = formatarPreco(p.preco / 10);
 
             return `
             <article class="produto">
@@ -234,13 +190,9 @@ function renderizarProdutos(categoria = "todos") {
                     <h3 class="produto-nome">${p.nome}</h3>
                     <p class="produto-descricao">${p.descricao}</p>
                     <p class="produto-preco">${formatarPreco(p.preco)}</p>
-                    <p class="produto-parcelas">ou 10x de ${parcela} no cartão</p>
                     <div class="produto-acoes">
-                        <button class="btn-adicionar" data-id="${p.id}">
-                            <i class="fa-solid fa-cart-plus"></i> Adicionar
-                        </button>
-                        <button class="btn-comprar-agora" data-id="${p.id}" title="Comprar agora pelo WhatsApp">
-                            <i class="fa-brands fa-whatsapp"></i>
+                        <button class="btn-comprar-whats" data-id="${p.id}">
+                            <i class="fa-brands fa-whatsapp"></i> Comprar pelo WhatsApp
                         </button>
                     </div>
                 </div>
@@ -260,19 +212,13 @@ function nomeCategoria(slug) {
 }
 
 gradeProdutos.addEventListener("click", (e) => {
-    const btnAdicionar = e.target.closest(".btn-adicionar");
-    if (btnAdicionar) {
-        adicionarAoCarrinho(btnAdicionar.dataset.id);
-        return;
-    }
-    const btnComprar = e.target.closest(".btn-comprar-agora");
-    if (btnComprar) {
-        const produto = PRODUTOS.find((p) => p.id === btnComprar.dataset.id);
-        if (produto) {
-            abrirWhatsApp(
-                `Olá! Tenho interesse neste produto:\n\n• ${produto.nome} — ${formatarPreco(produto.preco)}\n\nAinda está disponível?`
-            );
-        }
+    const botao = e.target.closest(".btn-comprar-whats");
+    if (!botao) return;
+    const produto = PRODUTOS.find((p) => p.id === botao.dataset.id);
+    if (produto) {
+        abrirWhatsApp(
+            `Olá! Vi este anúncio no site da MC Informática:\n\n• ${produto.nome} — ${formatarPreco(produto.preco)}\n\nAinda está disponível?`
+        );
     }
 });
 
@@ -285,105 +231,7 @@ document.getElementById("filtros").addEventListener("click", (e) => {
     renderizarProdutos(botao.dataset.categoria);
 });
 
-// ---------- Painel do carrinho ----------
-const painelCarrinho = document.getElementById("carrinho");
-const overlayCarrinho = document.getElementById("carrinho-overlay");
-const listaItens = document.getElementById("carrinho-itens");
-
-function abrirCarrinho() {
-    painelCarrinho.classList.add("aberto");
-    overlayCarrinho.classList.add("aberto");
-}
-
-function fecharCarrinho() {
-    painelCarrinho.classList.remove("aberto");
-    overlayCarrinho.classList.remove("aberto");
-}
-
-document.getElementById("btn-abrir-carrinho").addEventListener("click", abrirCarrinho);
-document.getElementById("btn-fechar-carrinho").addEventListener("click", fecharCarrinho);
-overlayCarrinho.addEventListener("click", fecharCarrinho);
-
-function renderizarCarrinho() {
-    document.getElementById("cart-count").textContent = quantidadeCarrinho();
-    document.getElementById("carrinho-total").textContent = formatarPreco(totalCarrinho());
-
-    if (carrinho.length === 0) {
-        listaItens.innerHTML = `
-            <div class="carrinho-vazio">
-                <i class="fa-solid fa-cart-shopping"></i>
-                Seu carrinho está vazio.<br>Adicione produtos para montar seu pedido.
-            </div>`;
-        return;
-    }
-
-    listaItens.innerHTML = carrinho
-        .map((item) => {
-            const produto = PRODUTOS.find((p) => p.id === item.id);
-            const icone = produto
-                ? produto.imagem
-                    ? `<img src="${produto.imagem}" alt="">`
-                    : `<i class="${produto.icone}"></i>`
-                : '<i class="fa-solid fa-box"></i>';
-
-            return `
-            <div class="item-carrinho">
-                <div class="item-icone">${icone}</div>
-                <div class="item-info">
-                    <p class="item-nome">${item.nome}</p>
-                    <p class="item-preco">${formatarPreco(item.preco)} cada</p>
-                    <div class="item-qtd">
-                        <button data-acao="menos" data-id="${item.id}" aria-label="Diminuir quantidade">−</button>
-                        <span>${item.qtd}</span>
-                        <button data-acao="mais" data-id="${item.id}" aria-label="Aumentar quantidade">+</button>
-                    </div>
-                </div>
-                <button class="item-remover" data-acao="remover" data-id="${item.id}" aria-label="Remover item">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
-            </div>`;
-        })
-        .join("");
-}
-
-listaItens.addEventListener("click", (e) => {
-    const botao = e.target.closest("button[data-acao]");
-    if (!botao) return;
-    const { acao, id } = botao.dataset;
-    if (acao === "mais") alterarQuantidade(id, 1);
-    if (acao === "menos") alterarQuantidade(id, -1);
-    if (acao === "remover") removerDoCarrinho(id);
-});
-
-// ---------- Finalizar pedido pelo WhatsApp ----------
-function abrirWhatsApp(mensagem) {
-    const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
-    window.open(url, "_blank");
-}
-
-document.getElementById("btn-finalizar").addEventListener("click", () => {
-    if (carrinho.length === 0) {
-        mostrarToast("Seu carrinho está vazio!");
-        return;
-    }
-
-    const linhas = carrinho.map(
-        (item) => `• ${item.qtd}x ${item.nome} — ${formatarPreco(item.preco * item.qtd)}`
-    );
-    const mensagem = [
-        "Olá! Gostaria de fazer um pedido pelo site da MC Informática:",
-        "",
-        ...linhas,
-        "",
-        `*Total: ${formatarPreco(totalCarrinho())}*`,
-        "",
-        "Aguardo o contato para combinar pagamento e entrega. Obrigado!"
-    ].join("\n");
-
-    abrirWhatsApp(mensagem);
-});
-
-// Links genéricos de WhatsApp (rodapé, botão flutuante, serviços)
+// Links genéricos de WhatsApp (cabeçalho, rodapé, botão flutuante, serviços)
 document.querySelectorAll("[data-whats]").forEach((el) => {
     el.addEventListener("click", (e) => {
         e.preventDefault();
@@ -400,21 +248,5 @@ nav.addEventListener("click", (e) => {
     if (e.target.tagName === "A") nav.classList.remove("aberto");
 });
 
-// ---------- Toast ----------
-let timerToast;
-function mostrarToast(texto) {
-    let toast = document.querySelector(".toast");
-    if (!toast) {
-        toast = document.createElement("div");
-        toast.className = "toast";
-        document.body.appendChild(toast);
-    }
-    toast.textContent = texto;
-    toast.classList.add("visivel");
-    clearTimeout(timerToast);
-    timerToast = setTimeout(() => toast.classList.remove("visivel"), 2200);
-}
-
 // ---------- Inicialização ----------
 renderizarProdutos();
-renderizarCarrinho();

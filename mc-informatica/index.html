@@ -15,8 +15,7 @@
 
     <!-- Barra superior -->
     <div class="topbar">
-        <span><i class="fa-solid fa-truck-fast"></i> Entregamos na sua região</span>
-        <span><i class="fa-brands fa-whatsapp"></i> Peça pelo WhatsApp</span>
+        <span><i class="fa-brands fa-whatsapp"></i> Atendimento pelo WhatsApp</span>
         <span><i class="fa-solid fa-screwdriver-wrench"></i> Assistência técnica especializada</span>
     </div>
 
@@ -35,10 +34,9 @@
         </nav>
 
         <div class="header-actions">
-            <button class="cart-button" id="btn-abrir-carrinho" aria-label="Abrir carrinho">
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span class="cart-count" id="cart-count">0</span>
-            </button>
+            <a href="#" class="btn btn-whatsapp btn-header-whats link-whats" data-whats="Olá! Vim pelo site da MC Informática.">
+                <i class="fa-brands fa-whatsapp"></i> WhatsApp
+            </a>
             <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">
                 <i class="fa-solid fa-bars"></i>
             </button>
@@ -52,8 +50,8 @@
             <h1>Tecnologia com <span>preço justo</span> e garantia de quem entende</h1>
             <p class="hero-texto">
                 Computadores, notebooks, periféricos e peças — equipamentos novos e seminovos
-                revisados pela nossa assistência técnica. Escolha no site e finalize seu pedido
-                direto pelo WhatsApp.
+                revisados pela nossa assistência técnica. Escolha no site e chame a gente
+                no WhatsApp para combinar tudo.
             </p>
             <div class="hero-botoes">
                 <a href="#produtos" class="btn btn-primario"><i class="fa-solid fa-store"></i> Ver produtos</a>
@@ -83,16 +81,16 @@
             <p>Atendimento direto com quem monta e conserta.</p>
         </div>
         <div class="diferencial">
-            <i class="fa-brands fa-pix"></i>
-            <h3>Pix, cartão e dinheiro</h3>
-            <p>Combine a forma de pagamento no fechamento do pedido.</p>
+            <i class="fa-brands fa-whatsapp"></i>
+            <h3>Negociação pelo WhatsApp</h3>
+            <p>Preço, pagamento e retirada combinados direto com a gente.</p>
         </div>
     </section>
 
     <!-- Produtos -->
     <main class="secao" id="produtos">
         <h2 class="secao-titulo">Nossos Produtos</h2>
-        <p class="secao-subtitulo">Filtre por categoria e adicione ao carrinho</p>
+        <p class="secao-subtitulo">Filtre por categoria e chame no WhatsApp para comprar</p>
 
         <div class="filtros" id="filtros">
             <button class="filtro ativo" data-categoria="todos">Todos</button>
@@ -154,7 +152,6 @@
                 <h4>Contato</h4>
                 <p><i class="fa-brands fa-whatsapp"></i> <a href="#" class="link-whats" data-whats="Olá! Vim pelo site da MC Informática.">Chamar no WhatsApp</a></p>
                 <p><i class="fa-solid fa-envelope"></i> contato@mcinformatica.com.br</p>
-                <p><i class="fa-solid fa-location-dot"></i> Atendemos toda a região</p>
             </div>
             <div class="rodape-coluna">
                 <h4>Horário de atendimento</h4>
@@ -169,28 +166,6 @@
     <a href="#" class="whats-flutuante link-whats" data-whats="Olá! Vim pelo site da MC Informática." aria-label="Falar no WhatsApp">
         <i class="fa-brands fa-whatsapp"></i>
     </a>
-
-    <!-- Carrinho (painel lateral) -->
-    <div class="carrinho-overlay" id="carrinho-overlay"></div>
-    <aside class="carrinho" id="carrinho" aria-label="Carrinho de compras">
-        <div class="carrinho-topo">
-            <h3><i class="fa-solid fa-cart-shopping"></i> Seu carrinho</h3>
-            <button id="btn-fechar-carrinho" aria-label="Fechar carrinho"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="carrinho-itens" id="carrinho-itens">
-            <!-- Itens renderizados via JavaScript -->
-        </div>
-        <div class="carrinho-rodape">
-            <div class="carrinho-total">
-                <span>Total</span>
-                <strong id="carrinho-total">R$ 0,00</strong>
-            </div>
-            <button class="btn btn-whatsapp btn-finalizar" id="btn-finalizar">
-                <i class="fa-brands fa-whatsapp"></i> Finalizar pedido pelo WhatsApp
-            </button>
-            <p class="carrinho-aviso">Você será direcionado ao WhatsApp com o resumo do pedido para combinar pagamento e entrega.</p>
-        </div>
-    </aside>
 
     <script src="app.js"></script>
 </body>

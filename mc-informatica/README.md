@@ -3,8 +3,8 @@
 Site de vendas da MC Informática (loja de informática, assistência técnica, novos e usados).
 
 Página estática, sem necessidade de servidor: basta abrir o `index.html` ou publicar a pasta
-em qualquer hospedagem (Vercel, Netlify, GitHub Pages etc.). O cliente monta o carrinho no
-site e finaliza o pedido pelo WhatsApp.
+em qualquer hospedagem (Vercel, Netlify, GitHub Pages etc.). O site não realiza venda direta:
+todos os anúncios e botões levam o cliente para o WhatsApp da loja, onde a negociação é fechada.
 
 ## Configurações importantes (arquivo `app.js`)
 
