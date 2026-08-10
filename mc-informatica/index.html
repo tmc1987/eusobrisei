@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MC Informática — Loja de Informática, Assistência Técnica, Novos e Usados</title>
+    <meta name="description" content="MC Informática: venda de computadores, notebooks, periféricos e hardware, novos e usados. Assistência técnica especializada. Compre pelo site e finalize pelo WhatsApp.">
+    <link rel="icon" type="image/svg+xml" href="img/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Barra superior -->
+    <div class="topbar">
+        <span><i class="fa-solid fa-truck-fast"></i> Entregamos na sua região</span>
+        <span><i class="fa-brands fa-whatsapp"></i> Peça pelo WhatsApp</span>
+        <span><i class="fa-solid fa-screwdriver-wrench"></i> Assistência técnica especializada</span>
+    </div>
+
+    <!-- Cabeçalho -->
+    <header class="header">
+        <a class="brand" href="#inicio">
+            <img src="img/logo.svg" alt="Logo MC Informática" class="brand-logo">
+            <span class="brand-name"><strong>MC</strong> INFORMÁTICA</span>
+        </a>
+
+        <nav class="nav" id="nav">
+            <a href="#inicio">Início</a>
+            <a href="#produtos">Produtos</a>
+            <a href="#servicos">Assistência Técnica</a>
+            <a href="#contato">Contato</a>
+        </nav>
+
+        <div class="header-actions">
+            <button class="cart-button" id="btn-abrir-carrinho" aria-label="Abrir carrinho">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span class="cart-count" id="cart-count">0</span>
+            </button>
+            <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero" id="inicio">
+        <div class="hero-conteudo">
+            <p class="hero-tag">Loja de Informática &bull; Novos e Usados</p>
+            <h1>Tecnologia com <span>preço justo</span> e garantia de quem entende</h1>
+            <p class="hero-texto">
+                Computadores, notebooks, periféricos e peças — equipamentos novos e seminovos
+                revisados pela nossa assistência técnica. Escolha no site e finalize seu pedido
+                direto pelo WhatsApp.
+            </p>
+            <div class="hero-botoes">
+                <a href="#produtos" class="btn btn-primario"><i class="fa-solid fa-store"></i> Ver produtos</a>
+                <a href="#servicos" class="btn btn-secundario"><i class="fa-solid fa-screwdriver-wrench"></i> Assistência técnica</a>
+            </div>
+        </div>
+        <div class="hero-logo">
+            <img src="img/logo.svg" alt="MC Informática">
+        </div>
+    </section>
+
+    <!-- Diferenciais -->
+    <section class="diferenciais">
+        <div class="diferencial">
+            <i class="fa-solid fa-shield-halved"></i>
+            <h3>Garantia real</h3>
+            <p>Todos os equipamentos saem testados e com garantia da loja.</p>
+        </div>
+        <div class="diferencial">
+            <i class="fa-solid fa-recycle"></i>
+            <h3>Novos e usados</h3>
+            <p>Seminovos revisados com ótimo custo-benefício.</p>
+        </div>
+        <div class="diferencial">
+            <i class="fa-solid fa-headset"></i>
+            <h3>Suporte de verdade</h3>
+            <p>Atendimento direto com quem monta e conserta.</p>
+        </div>
+        <div class="diferencial">
+            <i class="fa-brands fa-pix"></i>
+            <h3>Pix, cartão e dinheiro</h3>
+            <p>Combine a forma de pagamento no fechamento do pedido.</p>
+        </div>
+    </section>
+
+    <!-- Produtos -->
+    <main class="secao" id="produtos">
+        <h2 class="secao-titulo">Nossos Produtos</h2>
+        <p class="secao-subtitulo">Filtre por categoria e adicione ao carrinho</p>
+
+        <div class="filtros" id="filtros">
+            <button class="filtro ativo" data-categoria="todos">Todos</button>
+            <button class="filtro" data-categoria="notebooks">Notebooks</button>
+            <button class="filtro" data-categoria="computadores">Computadores</button>
+            <button class="filtro" data-categoria="perifericos">Periféricos</button>
+            <button class="filtro" data-categoria="hardware">Hardware</button>
+            <button class="filtro" data-categoria="usados">Usados</button>
+        </div>
+
+        <div class="grade-produtos" id="grade-produtos">
+            <!-- Produtos renderizados via JavaScript (lista em app.js) -->
+        </div>
+    </main>
+
+    <!-- Assistência Técnica -->
+    <section class="secao secao-servicos" id="servicos">
+        <h2 class="secao-titulo">Assistência Técnica</h2>
+        <p class="secao-subtitulo">Seu equipamento nas mãos de quem entende</p>
+
+        <div class="grade-servicos">
+            <div class="servico">
+                <i class="fa-solid fa-laptop-medical"></i>
+                <h3>Manutenção de notebooks e PCs</h3>
+                <p>Limpeza, troca de pasta térmica, reparo de placas, telas e teclados.</p>
+            </div>
+            <div class="servico">
+                <i class="fa-solid fa-rocket"></i>
+                <h3>Upgrade de desempenho</h3>
+                <p>Instalação de SSD, memória RAM e placa de vídeo para seu computador voar.</p>
+            </div>
+            <div class="servico">
+                <i class="fa-solid fa-database"></i>
+                <h3>Recuperação de dados</h3>
+                <p>Backup e recuperação de arquivos de HDs, SSDs e pen drives.</p>
+            </div>
+            <div class="servico">
+                <i class="fa-solid fa-desktop"></i>
+                <h3>Montagem de computadores</h3>
+                <p>PCs sob medida para trabalho, estudo ou jogos, dentro do seu orçamento.</p>
+            </div>
+        </div>
+
+        <div class="servicos-cta">
+            <a href="#" class="btn btn-whatsapp" data-whats="Olá! Gostaria de um orçamento da assistência técnica.">
+                <i class="fa-brands fa-whatsapp"></i> Pedir orçamento pelo WhatsApp
+            </a>
+        </div>
+    </section>
+
+    <!-- Contato / Rodapé -->
+    <footer class="rodape" id="contato">
+        <div class="rodape-colunas">
+            <div class="rodape-coluna">
+                <img src="img/logo.svg" alt="MC Informática" class="rodape-logo">
+                <p>Loja de Informática &bull; Assistência Técnica &bull; Novos e Usados</p>
+            </div>
+            <div class="rodape-coluna">
+                <h4>Contato</h4>
+                <p><i class="fa-brands fa-whatsapp"></i> <a href="#" class="link-whats" data-whats="Olá! Vim pelo site da MC Informática.">Chamar no WhatsApp</a></p>
+                <p><i class="fa-solid fa-envelope"></i> contato@mcinformatica.com.br</p>
+                <p><i class="fa-solid fa-location-dot"></i> Atendemos toda a região</p>
+            </div>
+            <div class="rodape-coluna">
+                <h4>Horário de atendimento</h4>
+                <p>Segunda a sexta: 9h às 18h</p>
+                <p>Sábado: 9h às 13h</p>
+            </div>
+        </div>
+        <p class="rodape-copy">© 2026 MC Informática. Todos os direitos reservados.</p>
+    </footer>
+
+    <!-- Botão flutuante do WhatsApp -->
+    <a href="#" class="whats-flutuante link-whats" data-whats="Olá! Vim pelo site da MC Informática." aria-label="Falar no WhatsApp">
+        <i class="fa-brands fa-whatsapp"></i>
+    </a>
+
+    <!-- Carrinho (painel lateral) -->
+    <div class="carrinho-overlay" id="carrinho-overlay"></div>
+    <aside class="carrinho" id="carrinho" aria-label="Carrinho de compras">
+        <div class="carrinho-topo">
+            <h3><i class="fa-solid fa-cart-shopping"></i> Seu carrinho</h3>
+            <button id="btn-fechar-carrinho" aria-label="Fechar carrinho"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="carrinho-itens" id="carrinho-itens">
+            <!-- Itens renderizados via JavaScript -->
+        </div>
+        <div class="carrinho-rodape">
+            <div class="carrinho-total">
+                <span>Total</span>
+                <strong id="carrinho-total">R$ 0,00</strong>
+            </div>
+            <button class="btn btn-whatsapp btn-finalizar" id="btn-finalizar">
+                <i class="fa-brands fa-whatsapp"></i> Finalizar pedido pelo WhatsApp
+            </button>
+            <p class="carrinho-aviso">Você será direcionado ao WhatsApp com o resumo do pedido para combinar pagamento e entrega.</p>
+        </div>
+    </aside>
+
+    <script src="app.js"></script>
+</body>
+</html>
