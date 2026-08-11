@@ -17,7 +17,7 @@
       - icone: classe Font Awesome usada quando não há foto
    ============================================================ */
 
-const NUMERO_WHATSAPP = "5500000000000"; // TODO: trocar pelo número real da MC Informática
+const NUMERO_WHATSAPP = "5516996198688"; // WhatsApp da MC Informática
 
 const PRODUTOS = [
     {

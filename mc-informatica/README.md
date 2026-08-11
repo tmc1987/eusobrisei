@@ -8,10 +8,11 @@ todos os anúncios e botões levam o cliente para o WhatsApp da loja, onde a neg
 
 ## Configurações importantes (arquivo `app.js`)
 
-1. **Número do WhatsApp** — troque a linha abaixo pelo número real da loja (DDI + DDD, só dígitos):
+1. **Número do WhatsApp** — já configurado com o número da loja. Se precisar trocar, edite
+   a linha abaixo (DDI + DDD, só dígitos):
 
    ```js
-   const NUMERO_WHATSAPP = "5500000000000"; // ex.: 5511999998888
+   const NUMERO_WHATSAPP = "5516996198688";
    ```
 
 2. **Produtos** — edite a lista `PRODUTOS` no topo do `app.js`. Cada produto tem:
